@@ -1,4 +1,10 @@
 ﻿#include "Lcd.h"
+#include "TinyGPS.h"
+
+#include <SoftwareSerial.h>
+
+TinyGPS gps;
+SoftwareSerial ss(4, 3);
 
 void setup(void)
 {
@@ -8,12 +14,14 @@ void setup(void)
 	LcdInitialise();
 	LcdClear();
 	LcdString("No elo!");
+
+	ss.begin(9600);
 }
 
 int buttonState = LOW;
 int previousButtonState = LOW;
 
-void loop(void)
+void loop()
 {
 	previousButtonState = buttonState;
 	buttonState = digitalRead(A0);
@@ -25,6 +33,4 @@ void loop(void)
 			LcdString("No elo!");
 		}
 	}
-
-	delay(1);
 }
