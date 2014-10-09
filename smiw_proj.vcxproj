@@ -79,8 +79,6 @@
     <ClInclude Include="HMC5883L.h" />
     <ClInclude Include="Lcd.h" />
     <ClInclude Include="TinyGPS.h" />
-    <ClInclude Include="Visual Micro\.SMiW-project.vsarduino.h" />
-    <ClInclude Include="Visual Micro\.smiw_proj.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HMC5883L.cpp" />
