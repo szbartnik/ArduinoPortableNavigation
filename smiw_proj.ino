@@ -1,7 +1,9 @@
-﻿#include "Lcd.h"
-#include "TinyGPS.h"
+﻿#include <SoftwareSerial.h>
+#include <Wire.h>
 
-#include <SoftwareSerial.h>
+#include "Lcd.h"
+#include "TinyGPS.h"
+#include "HMC5883L.h"
 
 TinyGPS gps;
 SoftwareSerial ss(4, 3);

@@ -24,9 +24,6 @@
     <None Include="smiw_proj.ino" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Visual Micro\.smiw_proj.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="CharDefs.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
@@ -36,12 +33,21 @@
     <ClInclude Include="Lcd.h">
       <Filter>Header Files\Libraries</Filter>
     </ClInclude>
+    <ClInclude Include="Visual Micro\.SMiW-project.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HMC5883L.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Lcd.cpp">
       <Filter>Source Files\Libraries</Filter>
     </ClCompile>
     <ClCompile Include="TinyGPS.cpp">
+      <Filter>Source Files\Libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="HMC5883L.cpp">
       <Filter>Source Files\Libraries</Filter>
     </ClCompile>
   </ItemGroup>
