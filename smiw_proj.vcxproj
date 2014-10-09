@@ -44,10 +44,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino;D:\Program Files (x86)\Arduino\hardware\arduino\variants\standard;D:\Program Files (x86)\Arduino\libraries\SoftwareSerial;D:\Program Files (x86)\Arduino\libraries\SoftwareSerial\utility;D:\Program Files (x86)\Arduino\libraries\Wire;D:\Program Files (x86)\Arduino\libraries\Wire\utility;D:\Program Files (x86)\Arduino\libraries;D:\Program Files (x86)\Arduino\hardware\arduino\libraries;D:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers;C:\Users\Szymon\Documents\Arduino\libraries;d:\program files (x86)\arduino\hardware\tools\avr\avr\include\;d:\program files (x86)\arduino\hardware\tools\avr\avr\include\avr\;d:\program files (x86)\arduino\hardware\tools\avr\avr\;d:\program files (x86)\arduino\hardware\tools\avr\lib\gcc\avr\4.3.2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>C:\Users\Szymon\Source\Repos\SMiW-project\Visual Micro\.SMiW-project.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino;C:\Program Files (x86)\Arduino\hardware\arduino\variants\standard;C:\Program Files (x86)\Arduino\libraries\SoftwareSerial;C:\Program Files (x86)\Arduino\libraries\SoftwareSerial\utility;C:\Program Files (x86)\Arduino\libraries\Wire;C:\Program Files (x86)\Arduino\libraries\Wire\utility;C:\Program Files (x86)\Arduino\libraries;C:\Program Files (x86)\Arduino\hardware\arduino\libraries;C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers;C:\Users\Szymon\Documents\Arduino\libraries;c:\program files (x86)\arduino\hardware\tools\avr\avr\include\;c:\program files (x86)\arduino\hardware\tools\avr\avr\include\avr\;c:\program files (x86)\arduino\hardware\tools\avr\avr\;c:\program files (x86)\arduino\hardware\tools\avr\lib\gcc\avr\4.3.2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>C:\Users\Szymon\Documents\Arduino\smiw_proj\Visual Micro\.smiw_proj.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <PreprocessorDefinitions>__AVR_ATmega328p__;__AVR_ATmega328P__;ARDUINO=106;ARDUINO_MAIN;__AVR__;__avr__;F_CPU=16000000L;__cplusplus;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__AVR_ATmega328p__;__AVR_ATmega328P__;ARDUINO=105;ARDUINO_MAIN;__AVR__;__avr__;F_CPU=16000000L;__cplusplus;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -80,6 +80,7 @@
     <ClInclude Include="Lcd.h" />
     <ClInclude Include="TinyGPS.h" />
     <ClInclude Include="Visual Micro\.SMiW-project.vsarduino.h" />
+    <ClInclude Include="Visual Micro\.smiw_proj.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HMC5883L.cpp" />

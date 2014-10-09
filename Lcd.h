@@ -18,6 +18,12 @@
 #define LCD_X     84
 #define LCD_Y     48
 
+#define LCD_SETX  0x80   
+#define LCD_SETY  0x40 
+
+#define LCD_HOME LcdWrite(LCD_C, 0x40);LcdWrite(LCD_C, 0x80);
+#define LCD_GOTO(x,y) LcdWrite(LCD_C, 0x40|(y));LcdWrite(LCD_C, 0x80|(x));
+
 // ##### Functions declarations ##### //
 
 void LcdCharacter(char);

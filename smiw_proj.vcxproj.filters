@@ -39,6 +39,9 @@
     <ClInclude Include="HMC5883L.h">
       <Filter>Header Files\Libraries</Filter>
     </ClInclude>
+    <ClInclude Include="Visual Micro\.smiw_proj.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Lcd.cpp">
