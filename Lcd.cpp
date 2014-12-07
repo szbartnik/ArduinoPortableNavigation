@@ -51,3 +51,20 @@ void LcdWrite(byte dc, byte data)
 	shiftOut(PIN_SDIN, PIN_SCLK, MSBFIRST, data);
 	digitalWrite(PIN_SCE, HIGH);
 }
+
+void LcdImage(unsigned char img[], char x0, char y0, char w, char h)
+{
+	unsigned int i, j, k;
+
+	for (i = 0, j = 0, k = 0; i<h; i++)
+	{
+		/* Komenda  LCD "Set Y address of RAM" */
+		LcdWrite(LCD_C, 0x40 | (i + y0));
+		/* Komenda "Set X address of RAM"*/
+		LcdWrite(LCD_C, 0x80 | (x0));
+
+		/* Kopiowanie z FLASH do pamiêci obrazu LCD  */
+		for (j = 0; j<w; j++, k++)
+			LcdWrite(LCD_D, pgm_read_byte(&img[k]));
+	}
+}
