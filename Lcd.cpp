@@ -16,6 +16,7 @@ void LcdClear(void)
 	{
 		LcdWrite(LCD_D, 0x00);
 	}
+	LcdGoToXY(0, 0);
 }
 
 void LcdInitialise(void)
@@ -42,6 +43,12 @@ void LcdString(char *characters)
 	{
 		LcdCharacter(*characters++);
 	}
+}
+
+void LcdGoToXY(int x, int y)
+{
+	LcdWrite(0, 0x80 | x);  // Column.
+	LcdWrite(0, 0x40 | y);  // Row.  
 }
 
 void LcdWrite(byte dc, byte data)

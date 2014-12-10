@@ -41,6 +41,7 @@ extern "C" void __cxa_pure_virtual() {;}
 
 void setup(void);
 //
+void ReadMagnetometer();
 void SdCardCheck();
 
 #include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
