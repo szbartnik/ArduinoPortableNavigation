@@ -24,7 +24,7 @@ Sd2Card card;
 SdVolume volume;
 SdFile root;
 
-const int chipSelect = 10;
+const byte chipSelect = 10;
 
 HardwareSerial gpsSerial(Serial);
 
@@ -48,17 +48,13 @@ void setup(void)
 	compass.SetScale(0.88);
 }
 
-int buttonState_0 = LOW;
-int buttonState_1 = LOW;
-int buttonState_2 = LOW;
+byte buttonState_0 = LOW;
+byte buttonState_1 = LOW;
+byte buttonState_2 = LOW;
 
-int previousButtonState_0 = LOW;
-int previousButtonState_1 = LOW;
-int previousButtonState_2 = LOW;
-
-char xBuff[16];
-char yBuff[16];
-char zBuff[16];
+byte previousButtonState_0 = LOW;
+byte previousButtonState_1 = LOW;
+byte previousButtonState_2 = LOW;
 
 String xStr, yStr, zStr;
 
@@ -79,6 +75,7 @@ void loop()
 			LcdClear();
 			LcdString("Button 0! ");
 			GpsTest();
+			delay(200);
 		}
 	}
 
@@ -89,6 +86,7 @@ void loop()
 			LcdClear();
 			LcdString("Button 1! ");
 			SdCardCheck();
+			delay(200);
 		}
 	}
 
@@ -99,6 +97,7 @@ void loop()
 			LcdClear();
 			LcdString("Button 2! ");
 			ReadMagnetometer();
+			delay(200);
 		}
 	}
 }
@@ -109,7 +108,7 @@ void GpsTest()
 	smartdelay(1000);
 
 	char buff[5];
-	String str = String(gps.speed());
+	String str = String(gps.altitude());
 	str.toCharArray(buff, 5);
 
 	LcdString(buff);
@@ -119,6 +118,7 @@ void GpsTest()
 #ifdef GPS_ON
 static void smartdelay(unsigned long ms)
 {
+	LcdString("_xx_");
 	unsigned long start = millis();
 	do
 	{
@@ -133,6 +133,10 @@ static void smartdelay(unsigned long ms)
 
 void ReadMagnetometer()
 {
+	char xBuff[16];
+	char yBuff[16];
+	char zBuff[16];
+
 	delay(200);
 
 	MagnetometerRaw scaledValue = compass.ReadRawAxis();
@@ -159,6 +163,7 @@ void ReadMagnetometer()
 
 void SdCardCheck()
 {
+	delay(10);
 	LcdString("Init SD... ");
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
