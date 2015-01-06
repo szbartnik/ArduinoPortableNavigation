@@ -1,25 +1,16 @@
-﻿#define GPS_ON
-
-#include <SoftwareSerial\SoftwareSerial.h>
+﻿#include <SoftwareSerial\SoftwareSerial.h>
 #include <Wire.h>
 #include <SD.h>
 
-//#include "InitScreen.h"
+#include "InitScreen.h"
 
 // Libraries
-//#include "Lcd.h"
-
+#include "Lcd.h"
 #include "HMC5883L.h"
-
-#ifdef GPS_ON
 #include "TinyGPS.h"
-#endif
 
 HMC5883L compass;
-
-#ifdef GPS_ON
 TinyGPS gps;
-#endif
 
 Sd2Card card;
 SdVolume volume;
@@ -43,9 +34,9 @@ void setup(void)
 	pinMode(chipSelect, OUTPUT);
 
 
-	//LcdInitialise();
-	//LcdClear();
-	//LcdImage(initImg, 0, 0, 84, 6);
+	LcdInitialise();
+	LcdClear();
+	LcdImage(initImg, 0, 0, 84, 6);
 
 	compass.SetMeasurementMode(Measurement_Continuous);
 	compass.SetScale(0.88);
@@ -107,7 +98,6 @@ void loop()
 
 void GpsTest()
 {
-#ifdef GPS_ON
 	smartdelay(1000);
 
 	/*char buff[5];
@@ -141,10 +131,8 @@ void GpsTest()
 	print_int(sentences, 0xFFFFFFFF, 10);
 	print_int(failed, 0xFFFFFFFF, 9);
 	Serial.println();
-#endif
 }
 
-#ifdef GPS_ON
 static void smartdelay(unsigned long ms)
 {
 	unsigned long start = millis();
@@ -156,7 +144,6 @@ static void smartdelay(unsigned long ms)
 		}
 	} while (millis() - start < ms);
 }
-#endif
 
 void ReadMagnetometer()
 {
