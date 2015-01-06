@@ -1,4 +1,4 @@
-﻿#define GPS_ON
+﻿#define GPS_ONs
 
 #include <Wire.h>
 #include <SD.h>
@@ -8,11 +8,11 @@
 // Libraries
 #include "Lcd.h"
 
+#include "HMC5883L.h"
+
 #ifdef GPS_ON
 #include "TinyGPS.h"
 #endif
-
-#include "HMC5883L.h"
 
 HMC5883L compass;
 
@@ -35,7 +35,6 @@ void setup(void)
 
 	pinMode(chipSelect, OUTPUT);
 
-	Serial.begin(9600);
 
 	LcdInitialise();
 	LcdClear();
@@ -43,6 +42,8 @@ void setup(void)
 
 	compass.SetMeasurementMode(Measurement_Continuous);
 	compass.SetScale(0.88);
+
+	Serial.begin(9600);
 }
 
 int buttonState_0 = LOW;
@@ -75,21 +76,7 @@ void loop()
 		{
 			LcdClear();
 			LcdString("Button 0! ");
-
-#ifdef GPS_ON
-			while (Serial.available())
-			{
-				int c = Serial.read();
-				if (gps.encode(c))
-				{
-					char buff[5];
-					String str = String(gps.speed());
-					str.toCharArray(buff, 5);
-
-					LcdString(buff);
-				}
-			}
-#endif
+			GpsTest();
 		}
 	}
 
@@ -113,6 +100,34 @@ void loop()
 		}
 	}
 }
+
+void GpsTest()
+{
+#ifdef GPS_ON
+	smartdelay(1000);
+
+	char buff[5];
+	String str = String(gps.speed());
+	str.toCharArray(buff, 5);
+
+	LcdString(buff);
+#endif
+}
+
+#ifdef GPS_ON
+static void smartdelay(unsigned long ms)
+{
+	unsigned long start = millis();
+	do
+	{
+		while (Serial.available())
+		{
+			LcdString("_xx_");
+			gps.encode(Serial.read());
+		}
+	} while (millis() - start < ms);
+}
+#endif
 
 void ReadMagnetometer()
 {

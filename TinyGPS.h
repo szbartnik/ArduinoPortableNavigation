@@ -10,7 +10,7 @@
 #define _GPS_KMPH_PER_KNOT 1.852
 #define _GPS_MILES_PER_METER 0.00062137112
 #define _GPS_KM_PER_METER 0.001
-// #define _GPS_NO_STATS
+#define _GPS_NO_STATS
 
 class TinyGPS
 {
