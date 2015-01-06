@@ -1,4 +1,5 @@
-﻿#include <SoftwareSerial.h>
+﻿#define GPS_ON
+
 #include <Wire.h>
 #include <SD.h>
 
@@ -6,11 +7,18 @@
 
 // Libraries
 #include "Lcd.h"
+
+#ifdef GPS_ON
 #include "TinyGPS.h"
+#endif
+
 #include "HMC5883L.h"
 
 HMC5883L compass;
+
+#ifdef GPS_ON
 TinyGPS gps;
+#endif
 
 Sd2Card card;
 SdVolume volume;
@@ -18,21 +26,16 @@ SdFile root;
 
 const int chipSelect = 10;
 
-SoftwareSerial ss(4, 3);
-
 void setup(void)
 {
 	pinMode(A0, INPUT);
 	pinMode(A1, INPUT);
 	pinMode(A2, INPUT);
+	pinMode(A3, INPUT);
 
 	pinMode(chipSelect, OUTPUT);
 
-	pinMode(4, INPUT);
-	pinMode(3, OUTPUT);
-
-	//Serial.begin(9600);
-	ss.begin(9600);
+	Serial.begin(9600);
 
 	LcdInitialise();
 	LcdClear();
@@ -72,11 +75,11 @@ void loop()
 		{
 			LcdClear();
 			LcdString("Button 0! ");
-			//Serial.println("Nacisnieto 0");
 
-			while (ss.available())
+#ifdef GPS_ON
+			while (Serial.available())
 			{
-				int c = ss.read();
+				int c = Serial.read();
 				if (gps.encode(c))
 				{
 					char buff[5];
@@ -86,6 +89,7 @@ void loop()
 					LcdString(buff);
 				}
 			}
+#endif
 		}
 	}
 
@@ -95,7 +99,6 @@ void loop()
 		{
 			LcdClear();
 			LcdString("Button 1! ");
-			//Serial.println("Nacisnieto 1");
 			SdCardCheck();
 		}
 	}
@@ -106,7 +109,6 @@ void loop()
 		{
 			LcdClear();
 			LcdString("Button 2! ");
-			//Serial.println("Nacisnieto 2");
 			ReadMagnetometer();
 		}
 	}
@@ -114,11 +116,7 @@ void loop()
 
 void ReadMagnetometer()
 {
-	delay(200);
-
 	MagnetometerRaw scaledValue = compass.ReadRawAxis();
-
-	delay(200);
 
 	xStr = String(scaledValue.XAxis);
 	xStr.toCharArray(xBuff, 16);
@@ -138,32 +136,18 @@ void ReadMagnetometer()
 	LcdGoToXY(0, 3);
 	LcdString("Z: ");
 	LcdString(zBuff);
-	
-	/*Serial.print("X: ");
-	Serial.print(scaledValue.XAxis);
-	Serial.print(", Y: ");
-	Serial.print(scaledValue.YAxis);
-	Serial.print(", Z: ");
-	Serial.print(scaledValue.ZAxis);
-	Serial.println("");*/
 }
 
 void SdCardCheck()
 {
-	delay(200);
 	LcdString("Init SD... ");
-	//Serial.print("\nInitializing SD card...");
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
 	{
-		delay(200);
 		LcdString("SD card failure! ");
-		//Serial.println("SD card failure! ");
 	}
 	else 
 	{
-		delay(200);
 		LcdString("SD card ok! ");
-		//Serial.println("SD card ok! ");
 	}
 }
