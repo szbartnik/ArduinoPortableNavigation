@@ -1,4 +1,4 @@
-﻿#define GPS_ONs
+﻿#define GPS_ON
 
 #include <Wire.h>
 #include <SD.h>
@@ -26,8 +26,12 @@ SdFile root;
 
 const int chipSelect = 10;
 
+HardwareSerial gpsSerial(Serial);
+
 void setup(void)
 {
+	gpsSerial.begin(9600);
+
 	pinMode(A0, INPUT);
 	pinMode(A1, INPUT);
 	pinMode(A2, INPUT);
@@ -42,8 +46,6 @@ void setup(void)
 
 	compass.SetMeasurementMode(Measurement_Continuous);
 	compass.SetScale(0.88);
-
-	Serial.begin(9600);
 }
 
 int buttonState_0 = LOW;
@@ -120,10 +122,10 @@ static void smartdelay(unsigned long ms)
 	unsigned long start = millis();
 	do
 	{
-		while (Serial.available())
+		while (gpsSerial.available())
 		{
 			LcdString("_xx_");
-			gps.encode(Serial.read());
+			gps.encode(gpsSerial.read());
 		}
 	} while (millis() - start < ms);
 }
@@ -131,6 +133,8 @@ static void smartdelay(unsigned long ms)
 
 void ReadMagnetometer()
 {
+	delay(200);
+
 	MagnetometerRaw scaledValue = compass.ReadRawAxis();
 
 	xStr = String(scaledValue.XAxis);
