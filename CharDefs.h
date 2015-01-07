@@ -3,7 +3,7 @@
 
 #include "Arduino.h"
 
-static const byte ASCII[][5] =
+static const byte ASCII[][5] PROGMEM =
 {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00 } // 20  
 	, { 0x00, 0x00, 0x5f, 0x00, 0x00 } // 21 !

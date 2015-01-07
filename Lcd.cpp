@@ -5,7 +5,7 @@ void LcdCharacter(char character)
 	LcdWrite(LCD_D, 0x00);
 	for (int index = 0; index < 5; index++)
 	{
-		LcdWrite(LCD_D, ASCII[character - 0x20][index]);
+		LcdWrite(LCD_D, pgm_read_byte_near(&(ASCII[character - 0x20][index])));
 	}
 	LcdWrite(LCD_D, 0x00);
 }

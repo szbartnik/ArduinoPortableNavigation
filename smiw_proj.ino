@@ -1,25 +1,47 @@
-﻿#include <SoftwareSerial\SoftwareSerial.h>
+﻿#define GPS_ON
+#define ACC_ON
+
+#include <Arduino.h>
+
+#ifdef GPS_ON
+#include <SoftwareSerial\SoftwareSerial.h>
+#endif
+#ifdef ACC_ON
 #include <Wire.h>
-//#include <SD.h>
+#endif
+
+#include <SD.h>
 
 #include "InitScreen.h"
 
 // Libraries
 #include "Lcd.h"
+#ifdef ACC_ON
 #include "HMC5883L.h"
+#endif
+#ifdef GPS_ON
 #include "TinyGPS.h"
+#endif
 
+#ifdef ACC_ON
 HMC5883L compass;
+#endif
+#ifdef GPS_ON
 TinyGPS gps;
+#endif
 
-//Sd2Card card;
-//const byte chipSelect = 10;
+Sd2Card card;
+const byte chipSelect = 10;
 
+#ifdef GPS_ON
 SoftwareSerial gpsSerial(4, 3);
+#endif
 
 void setup(void)
 {
+#ifdef GPS_ON
 	gpsSerial.begin(9600);
+#endif
 	Serial.begin(9600);
 
 	pinMode(A0, INPUT);
@@ -27,15 +49,16 @@ void setup(void)
 	pinMode(A2, INPUT);
 	pinMode(A3, INPUT);
 
-	//pinMode(chipSelect, OUTPUT);
-	//digitalWrite(chipSelect, HIGH);
+	pinMode(chipSelect, OUTPUT);
 
 	LcdInitialise();
 	LcdClear();
 	LcdImage(initImg, 0, 0, 84, 6);
 
+#ifdef ACC_ON
 	compass.SetMeasurementMode(Measurement_Continuous);
 	compass.SetScale(0.88);
+#endif
 }
 
 byte buttonState_0 = LOW;
@@ -49,6 +72,149 @@ byte previousButtonState_2 = LOW;
 byte previousButtonState_3 = LOW;
 
 String xStr, yStr, zStr;
+
+int freeRam()
+{
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
+
+#ifdef GPS_ON
+static void smartdelay(unsigned long ms)
+{
+	unsigned long start = millis();
+	do
+	{
+		while (gpsSerial.available())
+		{
+			gps.encode(gpsSerial.read());
+		}
+	} while (millis() - start < ms);
+}
+
+static void print_float(float val, float invalid, int len, int prec)
+{
+	if (val == invalid)
+	{
+		while (len-- > 1)
+			Serial.print('*');
+		Serial.print(' ');
+	}
+	else
+	{
+		Serial.print(val, prec);
+		int vi = abs((int)val);
+		int flen = prec + (val < 0.0 ? 2 : 1); // . and -
+		flen += vi >= 1000 ? 4 : vi >= 100 ? 3 : vi >= 10 ? 2 : 1;
+		for (int i = flen; i<len; ++i)
+			Serial.print(' ');
+	}
+	smartdelay(0);
+}
+
+static void print_int(unsigned long val, unsigned long invalid, int len)
+{
+	char sz[32];
+	if (val == invalid)
+		strcpy(sz, "*******");
+	else
+		sprintf(sz, "%ld", val);
+	sz[len] = 0;
+	for (int i = strlen(sz); i<len; ++i)
+		sz[i] = ' ';
+	if (len > 0)
+		sz[len - 1] = ' ';
+	Serial.print(sz);
+	smartdelay(0);
+}
+
+static void print_str(const char *str, int len)
+{
+	int slen = strlen(str);
+	for (int i = 0; i<len; ++i)
+		Serial.print(i<slen ? str[i] : ' ');
+	smartdelay(0);
+}
+
+#endif
+
+void GpsTest()
+{
+#ifdef GPS_ON
+	smartdelay(1000);
+
+	float flat, flon;
+	static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
+
+	print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
+	gps.f_get_position(&flat, &flon);
+	print_float(flat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
+	print_float(flon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
+	print_float(gps.f_altitude(), TinyGPS::GPS_INVALID_F_ALTITUDE, 7, 2);
+	print_float(gps.f_course(), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
+	print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
+	print_int(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(flat, flon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
+	Serial.println();
+#endif
+}
+
+void ReadMagnetometer()
+{
+#ifdef ACC_ON
+	char xBuff[16];
+	char yBuff[16];
+	char zBuff[16];
+
+	MagnetometerRaw scaledValue = compass.ReadRawAxis();
+
+	xStr = String(scaledValue.XAxis);
+	xStr.toCharArray(xBuff, 16);
+
+	yStr = String(scaledValue.YAxis);
+	yStr.toCharArray(yBuff, 16);
+
+	zStr = String(scaledValue.ZAxis);
+	zStr.toCharArray(zBuff, 16);
+
+	LcdGoToXY(0, 1);
+	LcdString("X: ");
+	LcdString(xBuff);
+	Serial.write("X: ");
+	Serial.write(xBuff);
+
+	LcdGoToXY(0, 2);
+	LcdString("Y: ");
+	LcdString(yBuff);
+	Serial.write("Y: ");
+	Serial.write(yBuff);
+
+	LcdGoToXY(0, 3);
+	LcdString("Z: ");
+	LcdString(zBuff);
+	Serial.write("Z: ");
+	Serial.write(zBuff);
+#endif
+}
+
+void SdCardCheck()
+{
+	Serial.println(freeRam());
+
+	LcdString("Init SD... ");
+	Serial.write("Init SD... ");
+
+	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
+	{
+		//LcdString("SD card failure! ");
+		Serial.write("SD card failure! ");
+	}
+	else 
+	{
+		//LcdString("SD card ok! ");
+		Serial.write("SD card ok! ");
+	}
+}
 
 void loop()
 {
@@ -108,140 +274,4 @@ void loop()
 			delay(200);
 		}
 	}
-}
-
-void GpsTest()
-{
-	smartdelay(1000);
-
-	float flat, flon;
-	static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
-
-	print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
-	gps.f_get_position(&flat, &flon);
-	print_float(flat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
-	print_float(flon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
-	print_float(gps.f_altitude(), TinyGPS::GPS_INVALID_F_ALTITUDE, 7, 2);
-	print_float(gps.f_course(), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
-	print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
-	print_int(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(flat, flon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
-	Serial.println();
-}
-
-static void smartdelay(unsigned long ms)
-{
-	unsigned long start = millis();
-	do
-	{
-		while (gpsSerial.available())
-		{
-			gps.encode(gpsSerial.read());
-		}
-	} while (millis() - start < ms);
-}
-
-void ReadMagnetometer()
-{
-	char xBuff[16];
-	char yBuff[16];
-	char zBuff[16];
-
-	MagnetometerRaw scaledValue = compass.ReadRawAxis();
-
-	xStr = String(scaledValue.XAxis);
-	xStr.toCharArray(xBuff, 16);
-
-	yStr = String(scaledValue.YAxis);
-	yStr.toCharArray(yBuff, 16);
-
-	zStr = String(scaledValue.ZAxis);
-	zStr.toCharArray(zBuff, 16);
-
-	LcdGoToXY(0, 1);
-	LcdString("X: ");
-	LcdString(xBuff);
-	Serial.write("X: ");
-	Serial.write(xBuff);
-
-	LcdGoToXY(0, 2);
-	LcdString("Y: ");
-	LcdString(yBuff);
-	Serial.write("Y: ");
-	Serial.write(yBuff);
-
-	LcdGoToXY(0, 3);
-	LcdString("Z: ");
-	LcdString(zBuff);
-	Serial.write("Z: ");
-	Serial.write(zBuff);
-}
-
-void SdCardCheck()
-{
-	LcdString("Init SD... ");
-	Serial.write("Init SD... ");
-	Serial.println(freeRam());
-	//digitalWrite(chipSelect, LOW);
-
-	//if (!card.init(SPI_HALF_SPEED, chipSelect)) 
-	//{
-	//	//LcdString("SD card failure! ");
-	//	Serial.write("SD card failure! ");
-	//}
-	//else 
-	//{
-	//	//LcdString("SD card ok! ");
-	//	Serial.write("SD card ok! ");
-	//}
-	//digitalWrite(chipSelect, HIGH);
-}
-
-int freeRam() {
-	extern int __heap_start, *__brkval;
-	int v;
-	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
-}
-
-static void print_float(float val, float invalid, int len, int prec)
-{
-	if (val == invalid)
-	{
-		while (len-- > 1)
-			Serial.print('*');
-		Serial.print(' ');
-	}
-	else
-	{
-		Serial.print(val, prec);
-		int vi = abs((int)val);
-		int flen = prec + (val < 0.0 ? 2 : 1); // . and -
-		flen += vi >= 1000 ? 4 : vi >= 100 ? 3 : vi >= 10 ? 2 : 1;
-		for (int i = flen; i<len; ++i)
-			Serial.print(' ');
-	}
-	smartdelay(0);
-}
-
-static void print_int(unsigned long val, unsigned long invalid, int len)
-{
-	char sz[32];
-	if (val == invalid)
-		strcpy(sz, "*******");
-	else
-		sprintf(sz, "%ld", val);
-	sz[len] = 0;
-	for (int i = strlen(sz); i<len; ++i)
-		sz[i] = ' ';
-	if (len > 0)
-		sz[len - 1] = ' ';
-	Serial.print(sz);
-	smartdelay(0);
-}
-
-static void print_str(const char *str, int len)
-{
-	int slen = strlen(str);
-	for (int i = 0; i<len; ++i)
-		Serial.print(i<slen ? str[i] : ' ');
-	smartdelay(0);
 }
