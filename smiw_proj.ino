@@ -67,6 +67,7 @@ void loop()
 		if (buttonState_0 == HIGH)
 		{
 			//LcdClear();
+			//LcdString("Button 0! ");
 			Serial.write("Button 0! ");
 			GpsTest();
 			delay(200);
@@ -78,6 +79,7 @@ void loop()
 		if (buttonState_1 == HIGH)
 		{
 			//LcdClear();
+			//LcdString("Button 1! ");
 			Serial.write("Button 1! ");
 			SdCardCheck();
 			delay(200);
@@ -89,6 +91,7 @@ void loop()
 		if (buttonState_2 == HIGH)
 		{
 			//LcdClear();
+			//LcdString("Button 2! ");
 			Serial.write("Button 2! ");
 			ReadMagnetometer();
 			delay(200);
@@ -144,26 +147,37 @@ void ReadMagnetometer()
 	zStr.toCharArray(zBuff, 16);
 
 	//LcdGoToXY(0, 1);
+	//LcdString("X: ");
+	//LcdString(xBuff);
 	Serial.write("X: ");
 	Serial.write(xBuff);
+
 	//LcdGoToXY(0, 2);
+	//LcdString("Y: ");
+	//LcdString(yBuff);
 	Serial.write("Y: ");
 	Serial.write(yBuff);
+
 	//LcdGoToXY(0, 3);
+	//LcdString("Z: ");
+	//LcdString(zBuff);
 	Serial.write("Z: ");
 	Serial.write(zBuff);
 }
 
 void SdCardCheck()
 {
+	//LcdString("Init SD... ");
 	Serial.write("Init SD... ");
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
 	{
+		//LcdString("SD card failure! ");
 		Serial.write("SD card failure! ");
 	}
 	else 
 	{
+		//LcdString("SD card ok! ");
 		Serial.write("SD card ok! ");
 	}
 }
