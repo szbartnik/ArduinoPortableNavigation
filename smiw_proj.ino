@@ -1,6 +1,6 @@
 ﻿#include <SoftwareSerial\SoftwareSerial.h>
 #include <Wire.h>
-#include <SD.h>
+//#include <SD.h>
 
 #include "InitScreen.h"
 
@@ -12,14 +12,10 @@
 HMC5883L compass;
 TinyGPS gps;
 
-Sd2Card card;
-SdVolume volume;
-SdFile root;
-
-const byte chipSelect = 10;
+//Sd2Card card;
+//const byte chipSelect = 10;
 
 SoftwareSerial gpsSerial(4, 3);
-
 
 void setup(void)
 {
@@ -31,8 +27,8 @@ void setup(void)
 	pinMode(A2, INPUT);
 	pinMode(A3, INPUT);
 
-	pinMode(chipSelect, OUTPUT);
-
+	//pinMode(chipSelect, OUTPUT);
+	//digitalWrite(chipSelect, HIGH);
 
 	LcdInitialise();
 	LcdClear();
@@ -45,10 +41,12 @@ void setup(void)
 byte buttonState_0 = LOW;
 byte buttonState_1 = LOW;
 byte buttonState_2 = LOW;
+byte buttonState_3 = LOW;
 
 byte previousButtonState_0 = LOW;
 byte previousButtonState_1 = LOW;
 byte previousButtonState_2 = LOW;
+byte previousButtonState_3 = LOW;
 
 String xStr, yStr, zStr;
 
@@ -57,17 +55,19 @@ void loop()
 	previousButtonState_0 = buttonState_0;
 	previousButtonState_1 = buttonState_1;
 	previousButtonState_2 = buttonState_2;
+	previousButtonState_3 = buttonState_3;
 
 	buttonState_0 = digitalRead(A0);
 	buttonState_1 = digitalRead(A1);
 	buttonState_2 = digitalRead(A2);
+	buttonState_3 = digitalRead(A3);
 
 	if (previousButtonState_0 == LOW)
 	{
 		if (buttonState_0 == HIGH)
 		{
-			//LcdClear();
-			//LcdString("Button 0! ");
+			LcdClear();
+			LcdString("Button 0! ");
 			Serial.write("Button 0! ");
 			GpsTest();
 			delay(200);
@@ -78,8 +78,8 @@ void loop()
 	{
 		if (buttonState_1 == HIGH)
 		{
-			//LcdClear();
-			//LcdString("Button 1! ");
+			LcdClear();
+			LcdString("Button 1! ");
 			Serial.write("Button 1! ");
 			SdCardCheck();
 			delay(200);
@@ -90,10 +90,21 @@ void loop()
 	{
 		if (buttonState_2 == HIGH)
 		{
-			//LcdClear();
-			//LcdString("Button 2! ");
+			LcdClear();
+			LcdString("Button 2! ");
 			Serial.write("Button 2! ");
 			ReadMagnetometer();
+			delay(200);
+		}
+	}
+
+	if (previousButtonState_3 == LOW)
+	{
+		if (buttonState_3 == HIGH)
+		{
+			LcdClear();
+			LcdString("Button 3! ");
+			Serial.write("Button 3! ");
 			delay(200);
 		}
 	}
@@ -146,40 +157,49 @@ void ReadMagnetometer()
 	zStr = String(scaledValue.ZAxis);
 	zStr.toCharArray(zBuff, 16);
 
-	//LcdGoToXY(0, 1);
-	//LcdString("X: ");
-	//LcdString(xBuff);
+	LcdGoToXY(0, 1);
+	LcdString("X: ");
+	LcdString(xBuff);
 	Serial.write("X: ");
 	Serial.write(xBuff);
 
-	//LcdGoToXY(0, 2);
-	//LcdString("Y: ");
-	//LcdString(yBuff);
+	LcdGoToXY(0, 2);
+	LcdString("Y: ");
+	LcdString(yBuff);
 	Serial.write("Y: ");
 	Serial.write(yBuff);
 
-	//LcdGoToXY(0, 3);
-	//LcdString("Z: ");
-	//LcdString(zBuff);
+	LcdGoToXY(0, 3);
+	LcdString("Z: ");
+	LcdString(zBuff);
 	Serial.write("Z: ");
 	Serial.write(zBuff);
 }
 
 void SdCardCheck()
 {
-	//LcdString("Init SD... ");
+	LcdString("Init SD... ");
 	Serial.write("Init SD... ");
+	Serial.println(freeRam());
+	//digitalWrite(chipSelect, LOW);
 
-	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
-	{
-		//LcdString("SD card failure! ");
-		Serial.write("SD card failure! ");
-	}
-	else 
-	{
-		//LcdString("SD card ok! ");
-		Serial.write("SD card ok! ");
-	}
+	//if (!card.init(SPI_HALF_SPEED, chipSelect)) 
+	//{
+	//	//LcdString("SD card failure! ");
+	//	Serial.write("SD card failure! ");
+	//}
+	//else 
+	//{
+	//	//LcdString("SD card ok! ");
+	//	Serial.write("SD card ok! ");
+	//}
+	//digitalWrite(chipSelect, HIGH);
+}
+
+int freeRam() {
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
 static void print_float(float val, float invalid, int len, int prec)

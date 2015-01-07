@@ -30,7 +30,7 @@ void LcdGoToXY(int, int);
 void LcdCharacter(char character);
 void LcdClear(void);
 void LcdInitialise(void);
-void LcdString(char *characters, byte len);
+void LcdString(char *characters);
 void LcdWrite(byte dc, byte data);
 void LcdImage(unsigned char img[], char x0, char y0, char w, char h);
 
