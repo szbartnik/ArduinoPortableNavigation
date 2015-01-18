@@ -75,16 +75,15 @@ static void refreshView()
 	// If we are going to show main menu
 	if (currentView == LOC_MENU)
 	{
-		LcdClear();
+		LcdGoToXY(0, 0);
+		LcdString(F("-----Menu-----"));
+		LcdString(F("              "));
 		LcdString(F("Nagrywanie SD "), markedMenuOption == LOC_SDREC);
-		LcdGoToXY(0, 1);
 		LcdString(F("Nav. do punktu"), markedMenuOption == LOC_NAV);
-		LcdGoToXY(0, 2);
 		LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
-		LcdGoToXY(0, 3);
 		LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
 	}
-	// If we are going to show specific view
+	// If we are going to show specific viewy
 	else
 	{
 
