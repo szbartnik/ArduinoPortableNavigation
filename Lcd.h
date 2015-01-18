@@ -30,7 +30,10 @@ void LcdGoToXY(int, int);
 void LcdCharacter(char character);
 void LcdClear(void);
 void LcdInitialise(void);
-void LcdString(char *characters);
+
+void LcdString(char *characters, bool inversed = false);
+void LcdString(const __FlashStringHelper* pData, bool inversed = false);
+
 void LcdWrite(byte dc, byte data);
 void LcdImage(unsigned char img[], char x0, char y0, char w, char h);
 

@@ -1,13 +1,12 @@
 #include "Lcd.h"
 
-void LcdCharacter(char character)
+void LcdCharacter(char character, bool inverse)
 {
-	LcdWrite(LCD_D, 0x00);
+	LcdWrite(LCD_D, inverse ? 0xff : 0x00);
 	for (int index = 0; index < 5; index++)
 	{
-		LcdWrite(LCD_D, pgm_read_byte_near(&(ASCII[character - 0x20][index])));
+		LcdWrite(LCD_D, inverse ? ~pgm_read_byte_near(&(ASCII[character - 0x20][index])) : pgm_read_byte_near(&(ASCII[character - 0x20][index])));
 	}
-	LcdWrite(LCD_D, 0x00);
 }
 
 void LcdClear(void)
@@ -37,12 +36,24 @@ void LcdInitialise(void)
 	LcdWrite(LCD_C, 0x0C);
 }
 
-void LcdString(char *characters)
+void LcdString(char *characters, bool inversed)
 {
 	while (*characters)
 	{
-		LcdCharacter(*characters++);
+		LcdCharacter(*characters++, inversed);
 	}
+}
+
+void LcdString(const __FlashStringHelper* pData, bool inversed)
+{
+	char buffer[15];
+	int cursor = 0;
+	prog_char *ptr = (prog_char*)pData;
+
+	while ((buffer[cursor] = pgm_read_byte_near(ptr + cursor)) != '\0') 
+		++cursor;
+
+	LcdString(buffer, inversed);
 }
 
 void LcdGoToXY(int x, int y)

@@ -1,86 +1,94 @@
-﻿#define GPS_ON
-#define ACC_ON
+﻿#include <Arduino.h>
 
-#include <Arduino.h>
-
-#ifdef GPS_ON
 #include <SoftwareSerial\SoftwareSerial.h>
-#endif
-#ifdef ACC_ON
 #include <Wire.h>
-#endif
-
-#include <SD.h>
 
 #include "InitScreen.h"
 
+#define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
+#define LOC_MENU  -1
+#define LOC_SDREC  0
+#define LOC_NAV    1
+#define LOC_GPSPOS 2
+#define LOC_MAG    3
+
 // Libraries
+#include <SD.h>
 #include "Lcd.h"
-#ifdef ACC_ON
 #include "HMC5883L.h"
-#endif
-#ifdef GPS_ON
 #include "TinyGPS.h"
-#endif
 
-#ifdef ACC_ON
 HMC5883L compass;
-#endif
-#ifdef GPS_ON
 TinyGPS gps;
-#endif
-
 Sd2Card card;
-const byte chipSelect = 10;
 
-#ifdef GPS_ON
+static const byte chipSelect = 10;
+
 SoftwareSerial gpsSerial(4, 3);
-#endif
+
+static const byte DOWN_KEY = A3;
+static const byte UP_KEY = A2;
+static const byte EXECUTE_KEY = A1;
+static const byte EXIT_KEY = A0;
+
+byte DOWN_buttonState = LOW;
+byte UP_buttonState = LOW;
+byte EXECUTE_buttonState = LOW;
+byte EXIT_buttonState = LOW;
+
+byte DOWN_previousButtonState = LOW;
+byte UP_previousButtonState = LOW;
+byte EXECUTE_previousButtonState = LOW;
+byte EXIT_previousButtonState = LOW;
+
+char currentView;
+char markedMenuOption;
 
 void setup(void)
 {
-#ifdef GPS_ON
 	gpsSerial.begin(9600);
-#endif
 	Serial.begin(9600);
 
-	pinMode(A0, INPUT);
-	pinMode(A1, INPUT);
-	pinMode(A2, INPUT);
-	pinMode(A3, INPUT);
+	pinMode(DOWN_KEY, INPUT);
+	pinMode(UP_KEY, INPUT);
+	pinMode(EXECUTE_KEY, INPUT);
+	pinMode(EXIT_KEY, INPUT);
 
 	pinMode(chipSelect, OUTPUT);
+
+	compass.SetMeasurementMode(Measurement_Continuous);
+	compass.SetScale(0.88);
 
 	LcdInitialise();
 	LcdClear();
 	LcdImage(initImg, 0, 0, 84, 6);
 
-#ifdef ACC_ON
-	compass.SetMeasurementMode(Measurement_Continuous);
-	compass.SetScale(0.88);
-#endif
+	delay(1000);
+
+	currentView = -1;
+	markedMenuOption = 0;
+	showMenu(markedMenuOption);
 }
 
-byte buttonState_0 = LOW;
-byte buttonState_1 = LOW;
-byte buttonState_2 = LOW;
-byte buttonState_3 = LOW;
+static void showMenu(byte selected)
+{
+	LcdClear();
+	LcdString(F("Nagrywanie SD "), selected == LOC_SDREC);
+	LcdGoToXY(0, 1);
+	LcdString(F("Nav. do punktu"), selected == LOC_NAV);
+	LcdGoToXY(0, 2);
+	LcdString(F("Pozycja GPS   "), selected == LOC_GPSPOS);
+	LcdGoToXY(0, 3);
+	LcdString(F("Kompas        "), selected == LOC_MAG);
+}
 
-byte previousButtonState_0 = LOW;
-byte previousButtonState_1 = LOW;
-byte previousButtonState_2 = LOW;
-byte previousButtonState_3 = LOW;
-
-String xStr, yStr, zStr;
-
-int freeRam()
+static int freeRam()
 {
 	extern int __heap_start, *__brkval;
 	int v;
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
-#ifdef GPS_ON
 static void smartdelay(unsigned long ms)
 {
 	unsigned long start = millis();
@@ -115,7 +123,7 @@ static void print_float(float val, float invalid, int len, int prec)
 
 static void print_int(unsigned long val, unsigned long invalid, int len)
 {
-	char sz[32];
+	char sz[10];
 	if (val == invalid)
 		strcpy(sz, "*******");
 	else
@@ -137,11 +145,8 @@ static void print_str(const char *str, int len)
 	smartdelay(0);
 }
 
-#endif
-
-void GpsTest()
+static void GpsTest()
 {
-#ifdef GPS_ON
 	smartdelay(1000);
 
 	float flat, flon;
@@ -156,122 +161,103 @@ void GpsTest()
 	print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
 	print_int(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(flat, flon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
 	Serial.println();
-#endif
 }
 
-void ReadMagnetometer()
+static void ReadMagnetometer()
 {
-#ifdef ACC_ON
-	char xBuff[16];
-	char yBuff[16];
-	char zBuff[16];
+	char buff[6];
 
 	MagnetometerRaw scaledValue = compass.ReadRawAxis();
 
-	xStr = String(scaledValue.XAxis);
-	xStr.toCharArray(xBuff, 16);
-
-	yStr = String(scaledValue.YAxis);
-	yStr.toCharArray(yBuff, 16);
-
-	zStr = String(scaledValue.ZAxis);
-	zStr.toCharArray(zBuff, 16);
-
+	String xStr = String(scaledValue.XAxis);
+	xStr.toCharArray(buff, 6);
 	LcdGoToXY(0, 1);
 	LcdString("X: ");
-	LcdString(xBuff);
+	LcdString(buff);
 	Serial.write("X: ");
-	Serial.write(xBuff);
+	Serial.write(buff);
 
+	String yStr = String(scaledValue.YAxis);
+	yStr.toCharArray(buff, 6);
 	LcdGoToXY(0, 2);
 	LcdString("Y: ");
-	LcdString(yBuff);
+	LcdString(buff);
 	Serial.write("Y: ");
-	Serial.write(yBuff);
+	Serial.write(buff);
 
+	String zStr = String(scaledValue.ZAxis);
+	zStr.toCharArray(buff, 6);
 	LcdGoToXY(0, 3);
 	LcdString("Z: ");
-	LcdString(zBuff);
+	LcdString(buff);
 	Serial.write("Z: ");
-	Serial.write(zBuff);
-#endif
+	Serial.write(buff);
 }
 
-void SdCardCheck()
+static void SdCardCheck()
 {
 	Serial.println(freeRam());
 
-	LcdString("Init SD... ");
+	LcdString(F("Init SD... "));
 	Serial.write("Init SD... ");
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
 	{
-		//LcdString("SD card failure! ");
+		LcdString(F("SD card failure! "));
 		Serial.write("SD card failure! ");
 	}
 	else 
 	{
-		//LcdString("SD card ok! ");
+		LcdString(F("SD card ok! "));
 		Serial.write("SD card ok! ");
 	}
 }
 
 void loop()
 {
-	previousButtonState_0 = buttonState_0;
-	previousButtonState_1 = buttonState_1;
-	previousButtonState_2 = buttonState_2;
-	previousButtonState_3 = buttonState_3;
+	DOWN_previousButtonState = DOWN_buttonState;
+	UP_previousButtonState = UP_buttonState;
+	EXECUTE_previousButtonState = EXECUTE_buttonState;
+	EXIT_previousButtonState = EXIT_buttonState;
 
-	buttonState_0 = digitalRead(A0);
-	buttonState_1 = digitalRead(A1);
-	buttonState_2 = digitalRead(A2);
-	buttonState_3 = digitalRead(A3);
+	DOWN_buttonState = digitalRead(DOWN_KEY);
+	UP_buttonState = digitalRead(UP_KEY);
+	EXECUTE_buttonState = digitalRead(EXECUTE_KEY);
+	EXIT_buttonState = digitalRead(EXIT_KEY);
 
-	if (previousButtonState_0 == LOW)
+
+	if (DOWN_buttonState == HIGH && DOWN_previousButtonState == LOW)
 	{
-		if (buttonState_0 == HIGH)
-		{
-			LcdClear();
-			LcdString("Button 0! ");
-			Serial.write("Button 0! ");
-			GpsTest();
-			delay(200);
-		}
+		LcdClear();
+		LcdString(F("Down button! "));
+		Serial.write("Down button! ");
+		GpsTest();
+		delay(200);
 	}
 
-	if (previousButtonState_1 == LOW)
+	if (UP_buttonState == HIGH && UP_previousButtonState == LOW)
 	{
-		if (buttonState_1 == HIGH)
-		{
-			LcdClear();
-			LcdString("Button 1! ");
-			Serial.write("Button 1! ");
-			SdCardCheck();
-			delay(200);
-		}
+		LcdClear();
+		LcdString(F("Up button! "));
+		Serial.write("Up button! ");
+		SdCardCheck();
+		delay(200);
 	}
 
-	if (previousButtonState_2 == LOW)
+	if (EXECUTE_buttonState == HIGH && EXECUTE_previousButtonState == LOW)
 	{
-		if (buttonState_2 == HIGH)
-		{
-			LcdClear();
-			LcdString("Button 2! ");
-			Serial.write("Button 2! ");
-			ReadMagnetometer();
-			delay(200);
-		}
+		LcdClear();
+		LcdString(F("Execute! "));
+		Serial.write("Execute! ");
+		ReadMagnetometer();
+		delay(200);
 	}
 
-	if (previousButtonState_3 == LOW)
+	if (EXIT_buttonState == HIGH && EXIT_previousButtonState == LOW)
 	{
-		if (buttonState_3 == HIGH)
-		{
-			LcdClear();
-			LcdString("Button 3! ");
-			Serial.write("Button 3! ");
-			delay(200);
-		}
+		LcdClear();
+		LcdString(F("Exit button! "));
+		Serial.write("Exit button! ");
+		delay(200);
 	}
 }
