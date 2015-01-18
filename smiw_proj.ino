@@ -67,19 +67,28 @@ void setup(void)
 
 	currentView = -1;
 	markedMenuOption = 0;
-	showMenu(markedMenuOption);
+	refreshView();
 }
 
-static void showMenu(byte selected)
+static void refreshView()
 {
-	LcdClear();
-	LcdString(F("Nagrywanie SD "), selected == LOC_SDREC);
-	LcdGoToXY(0, 1);
-	LcdString(F("Nav. do punktu"), selected == LOC_NAV);
-	LcdGoToXY(0, 2);
-	LcdString(F("Pozycja GPS   "), selected == LOC_GPSPOS);
-	LcdGoToXY(0, 3);
-	LcdString(F("Kompas        "), selected == LOC_MAG);
+	// If we are going to show main menu
+	if (currentView == LOC_MENU)
+	{
+		LcdClear();
+		LcdString(F("Nagrywanie SD "), markedMenuOption == LOC_SDREC);
+		LcdGoToXY(0, 1);
+		LcdString(F("Nav. do punktu"), markedMenuOption == LOC_NAV);
+		LcdGoToXY(0, 2);
+		LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
+		LcdGoToXY(0, 3);
+		LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
+	}
+	// If we are going to show specific view
+	else
+	{
+
+	}
 }
 
 static int freeRam()
@@ -143,6 +152,17 @@ static void print_str(const char *str, int len)
 	for (int i = 0; i<len; ++i)
 		Serial.print(i<slen ? str[i] : ' ');
 	smartdelay(0);
+}
+
+static void moveMenu(bool isDirectionUp)
+{
+	markedMenuOption = isDirectionUp 
+		? (markedMenuOption == 0 
+			? 3 
+			: markedMenuOption - 1) 
+		: (markedMenuOption == 3 
+			? 0 
+			: markedMenuOption + 1);
 }
 
 static void GpsTest()
@@ -228,36 +248,46 @@ void loop()
 
 	if (DOWN_buttonState == HIGH && DOWN_previousButtonState == LOW)
 	{
-		LcdClear();
-		LcdString(F("Down button! "));
-		Serial.write("Down button! ");
-		GpsTest();
-		delay(200);
+		ButtonClicked(DOWN_KEY);
 	}
-
-	if (UP_buttonState == HIGH && UP_previousButtonState == LOW)
+	else if (UP_buttonState == HIGH && UP_previousButtonState == LOW)
 	{
-		LcdClear();
-		LcdString(F("Up button! "));
-		Serial.write("Up button! ");
-		SdCardCheck();
-		delay(200);
+		ButtonClicked(UP_KEY);
 	}
-
-	if (EXECUTE_buttonState == HIGH && EXECUTE_previousButtonState == LOW)
+	else if (EXECUTE_buttonState == HIGH && EXECUTE_previousButtonState == LOW)
 	{
-		LcdClear();
-		LcdString(F("Execute! "));
-		Serial.write("Execute! ");
 		ReadMagnetometer();
-		delay(200);
+		ButtonClicked(EXECUTE_KEY);
+	}
+	else if (EXIT_buttonState == HIGH && EXIT_previousButtonState == LOW)
+	{
+		SdCardCheck();
+		GpsTest();
+
+		ButtonClicked(EXIT_KEY);
+	}
+}
+
+void ButtonClicked(byte buttonId)
+{
+	switch (buttonId)
+	{
+		case DOWN_KEY:
+			moveMenu(false);
+			break;
+		case UP_KEY:
+			moveMenu(true);
+			break;
+		case EXECUTE_KEY:
+			if (currentView == LOC_MENU)
+				currentView = markedMenuOption;
+			break;
+		case EXIT_KEY:
+			if (currentView != LOC_MENU)
+				currentView = LOC_MENU;
+			break;
 	}
 
-	if (EXIT_buttonState == HIGH && EXIT_previousButtonState == LOW)
-	{
-		LcdClear();
-		LcdString(F("Exit button! "));
-		Serial.write("Exit button! ");
-		delay(200);
-	}
+	refreshView();
+	delay(150);
 }
