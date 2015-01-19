@@ -48,6 +48,7 @@ char currentView;
 char markedMenuOption;
 
 byte magnetometerRefreshTimer;
+byte gpsDataRefreshTimer;
 
 int magnetometerCurrentValue;
 
@@ -76,8 +77,13 @@ void setup(void)
 	markedMenuOption = 0;
 	refreshView();
 
+	// Magnetometer timer initialization
 	magnetometerRefreshTimer = timer.setInterval(1500, magnetometerRefreshTimerElapsed);
 	timer.disable(magnetometerRefreshTimer);
+
+	// Gps timer initialization
+	gpsDataRefreshTimer = timer.setInterval(2000, gpsDataRefreshTimerElapsed);
+	timer.disable(gpsDataRefreshTimer);
 }
 
 static void refreshView()
@@ -94,12 +100,28 @@ static void refreshView()
 			LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
 			LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
 			break;
+
 		case LOC_MAG:
 			LcdClear();
 			LcdString(F("----Kompas----"));
-			
 			timer.enable(magnetometerRefreshTimer);
 			break;
+
+		case LOC_GPSPOS:
+			LcdClear();
+			LcdString(F("---Dane GPS---"));
+			LcdString(F("Satelity:"), true);
+			LcdGoToXY(0, 2);
+			LcdString(F("Lat:"), true);
+			LcdGoToXY(0, 3);
+			LcdString(F("Lon:"), true);
+			LcdGoToXY(0, 4);
+			LcdString(F("Alt:"), true);
+			LcdGoToXY(0, 5);
+			LcdString(F("Speed:"), true);
+			timer.enable(gpsDataRefreshTimer);
+			break;
+
 		default:
 			LcdClear();
 	}
@@ -124,50 +146,6 @@ static void mySmartdelay(unsigned int ms)
 	} while (millis() - start < ms);
 }
 
-static void print_float(float val, float invalid, byte len, byte prec)
-{
-	if (val == invalid)
-	{
-		while (len-- > 1)
-			Serial.print('*');
-		Serial.print(' ');
-	}
-	else
-	{
-		Serial.print(val, prec);
-		byte vi = abs((byte)val);
-		byte flen = prec + (val < 0.0 ? 2 : 1); // . and -
-		flen += vi >= 1000 ? 4 : vi >= 100 ? 3 : vi >= 10 ? 2 : 1;
-		for (byte i = flen; i<len; ++i)
-			Serial.print(' ');
-	}
-	mySmartdelay(0);
-}
-
-static void print_int(unsigned long val, unsigned long invalid, int len)
-{
-	char sz[10];
-	if (val == invalid)
-		strcpy(sz, "*******");
-	else
-		sprintf(sz, "%ld", val);
-	sz[len] = 0;
-	for (int i = strlen(sz); i<len; ++i)
-		sz[i] = ' ';
-	if (len > 0)
-		sz[len - 1] = ' ';
-	Serial.print(sz);
-	mySmartdelay(0);
-}
-
-static void print_str(const char *str, byte len)
-{
-	byte slen = strlen(str);
-	for (byte i = 0; i<len; ++i)
-		Serial.print(i<slen ? str[i] : ' ');
-	mySmartdelay(0);
-}
-
 static void moveMenu(bool isDirectionUp)
 {
 	markedMenuOption = isDirectionUp 
@@ -177,24 +155,6 @@ static void moveMenu(bool isDirectionUp)
 		: (markedMenuOption == 3 
 			? 0 
 			: markedMenuOption + 1);
-}
-
-static void GpsTest()
-{
-	mySmartdelay(1000);
-
-	float flat, flon;
-	static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
-
-	print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
-	gps.f_get_position(&flat, &flon);
-	print_float(flat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
-	print_float(flon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
-	print_float(gps.f_altitude(), TinyGPS::GPS_INVALID_F_ALTITUDE, 7, 2);
-	print_float(gps.f_course(), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
-	print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
-	print_int(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(flat, flon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
-	Serial.println();
 }
 
 static int ReadMagnetometer()
@@ -255,7 +215,6 @@ void loop()
 	{
 		Serial.println(freeRam());
 		SdCardCheck();
-		GpsTest();
 
 		ButtonClicked(EXIT_KEY);
 	}
@@ -283,6 +242,69 @@ void magnetometerRefreshTimerElapsed()
 	LcdString(buffer);
 
 	printNorthDirection();
+}
+
+void gpsDataRefreshTimerElapsed()
+{
+	char buffer[9];
+	mySmartdelay(1000);
+
+	// Satellites number
+	byte satellites = gps.satellites();
+
+	LcdGoToXY(60, 1);
+	if (satellites == TinyGPS::GPS_INVALID_SATELLITES) {
+		LcdString(F("****"));
+	}
+	else {
+		LcdString(F("    "));
+		LcdGoToXY(60, 1);
+		String str = String(satellites);
+		str.toCharArray(buffer, 9);
+		LcdString(buffer);
+	}
+
+	// Latitude & longtitude
+	float flat, flon;
+	gps.f_get_position(&flat, &flon);
+
+	LcdGoToXY(30, 2);
+	if (flat == TinyGPS::GPS_INVALID_F_ANGLE || flon == TinyGPS::GPS_INVALID_ANGLE) {
+		LcdString(F("*********"));
+		LcdGoToXY(30, 3);
+		LcdString(F("*********"));
+	}
+	else{
+		LcdString(dtostrf(flat, 9, 6, buffer));
+		LcdGoToXY(30, 3);
+		LcdString(dtostrf(flon, 9, 6, buffer));
+	}
+
+	// Altitude (flat is now altitude)
+	flat = gps.f_altitude();
+
+	LcdGoToXY(30, 4);
+	if (flat == TinyGPS::GPS_INVALID_F_ALTITUDE) {
+		LcdString(F("******"));
+	}
+	else{
+		LcdString(F("      "));
+		LcdGoToXY(30, 4);
+		LcdString(dtostrf(flat, 6, 2, buffer));
+	}
+
+	// Speed (flat is now speed)
+	flat = gps.f_speed_kmph();
+
+	LcdGoToXY(42, 5);
+	if (flat == TinyGPS::GPS_INVALID_F_SPEED) {
+		LcdString(F("******"));
+	}
+	else{
+		LcdString(F("      "));
+		LcdGoToXY(42, 5);
+		LcdString(dtostrf(flat, 4, 2, buffer));
+	}
 }
 
 void printNorthDirection()
@@ -314,6 +336,7 @@ void ButtonClicked(byte buttonId)
 		case EXIT_KEY:
 			currentView = LOC_MENU;
 			timer.disable(magnetometerRefreshTimer);
+			timer.disable(gpsDataRefreshTimer);
 			break;
 	}
 
