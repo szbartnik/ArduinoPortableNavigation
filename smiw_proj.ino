@@ -47,7 +47,7 @@ byte EXIT_previousButtonState = LOW;
 
 char currentView;
 char markedMenuOption;
-byte markedSavedLocationEntry;
+char markedSavedLocationEntry;
 
 byte magnetometerRefreshTimer;
 byte gpsDataRefreshTimer;
@@ -89,6 +89,7 @@ void setup(void)
 
 	currentView = -1;
 	markedMenuOption = 0;
+	markedSavedLocationEntry = 0;
 	refreshView();
 
 	// Magnetometer timer initialization
@@ -160,7 +161,6 @@ static void refreshView()
 			break;
 
 		case LOC_NAV:
-			markedSavedLocationEntry = 0;
 			showSavedLocations();
 			break;
 
@@ -178,7 +178,10 @@ void showSavedLocations()
 	char buffer[12];
 	float flat, flon;
 
-	File gpsFile = SD.open(gpsFileName, FILE_READ);
+	File gpsFile = SD.open(gpsFileName, FILE_WRITE);
+	gpsFile.close();
+
+	gpsFile = SD.open(gpsFileName, FILE_READ);
 
 	for (byte i = 0; i <= markedSavedLocationEntry; i++)
 	{
@@ -186,22 +189,27 @@ void showSavedLocations()
 		flon = gpsFile.parseFloat();
 	}
 
-	if (flat == 0.0)
+	gpsFile.close();
+
+	LcdClear();
+	LcdString(F("----Nawiguj---"));
+
+	if (flat == 0.0 || markedSavedLocationEntry < 0)
 	{
-		markedSavedLocationEntry--;
-		showSavedLocations();
+		if (--markedSavedLocationEntry < 0)
+		{
+			LcdGoToXY(0, 3);
+			LcdString("No saved data!");
+		}
+		else showSavedLocations();
 	}
 	else
 	{
-		LcdClear();
-		LcdString(F("----Nawiguj---"));
-		LcdGoToXY(20, 2);
+		LcdGoToXY(15, 2);
 		LcdString(dtostrf(flat, 0, 6, buffer));
-		LcdGoToXY(20, 3);
+		LcdGoToXY(15, 3);
 		LcdString(dtostrf(flon, 0, 6, buffer));
 	}
-
-	gpsFile.close();
 }
 
 static int freeRam()
