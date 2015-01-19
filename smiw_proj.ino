@@ -212,17 +212,17 @@ static int ReadMagnetometer()
 static void SdCardCheck()
 {
 	LcdString(F("Init SD... "));
-	Serial.write("Init SD... ");
+	Serial.print("Init SD... ");
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
 	{
 		LcdString(F("SD card failure! "));
-		Serial.write("SD card failure! ");
+		Serial.println("SD card failure! ");
 	}
 	else 
 	{
 		LcdString(F("SD card ok! "));
-		Serial.write("SD card ok! ");
+		Serial.println("SD card ok! ");
 	}
 }
 
@@ -266,9 +266,9 @@ void loop()
 void magnetometerRefreshTimerElapsed()
 {
 	magnetometerCurrentValue = ReadMagnetometer();
-	Serial.write("Pomiar: ");
-	print_int(magnetometerCurrentValue, -1, 4);
-	Serial.write(" ");
+	Serial.print("Pomiar: ");
+	Serial.print(magnetometerCurrentValue);
+	Serial.println(" ");
 
 	char buffer[4];
 	String str = String(magnetometerCurrentValue);
@@ -279,6 +279,20 @@ void magnetometerRefreshTimerElapsed()
 	else LcdGoToXY(33, 1);
 
 	LcdString(buffer);
+
+	printNorthDirection();
+}
+
+void printNorthDirection()
+{
+	byte x = 39;
+	byte y = 32;
+
+	x -= 15 * sin((float)magnetometerCurrentValue * 1000 / 57296);
+	y -= 15 * cos((float)magnetometerCurrentValue * 1000 / 57296);
+
+	LcdGoToXY(x, y / 8);
+	LcdString("N");
 }
 
 void ButtonClicked(byte buttonId)
