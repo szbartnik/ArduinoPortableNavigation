@@ -12,6 +12,7 @@
 #define LOC_NAV    1
 #define LOC_GPSPOS 2
 #define LOC_MAG    3
+#define LOC_NAV2   4
 
 // Libraries
 #include <SD.h>
@@ -22,10 +23,10 @@
 
 HMC5883L compass;
 TinyGPS gps;
-Sd2Card card;
 SimpleTimer timer;
 
-static const byte chipSelect = 10;
+static const char* gpsFileName = "gps.txt";
+static const byte SD_CHIP_SELECT = 10;
 
 SoftwareSerial gpsSerial(4, 3);
 
@@ -46,6 +47,7 @@ byte EXIT_previousButtonState = LOW;
 
 char currentView;
 char markedMenuOption;
+byte markedSavedLocationEntry;
 
 byte magnetometerRefreshTimer;
 byte gpsDataRefreshTimer;
@@ -63,7 +65,7 @@ void setup(void)
 	pinMode(EXECUTE_KEY, INPUT);
 	pinMode(EXIT_KEY, INPUT);
 
-	pinMode(chipSelect, OUTPUT);
+	pinMode(SD_CHIP_SELECT, OUTPUT);
 
 	compass.SetMeasurementMode(Measurement_Continuous);
 	compass.SetScale();
@@ -71,6 +73,17 @@ void setup(void)
 	LcdInitialise();
 	LcdClear();
 	LcdImage(initImg, 0, 0, 84, 6);
+
+	delay(1000);
+	LcdClear();
+	LcdGoToXY(25, 2);
+
+	if (!SD.begin(SD_CHIP_SELECT)) {
+		LcdString(F("SD error!"));
+	}
+	else{
+		LcdString(F("SD ok!"));
+	}
 
 	delay(1000);
 
@@ -101,7 +114,7 @@ static void refreshView()
 			LcdString(F("-----Menu-----"));
 			LcdString(F("              "));
 			LcdString(F("Nagrywanie SD "), markedMenuOption == LOC_SDREC);
-			LcdString(F("Nav. do punktu"), markedMenuOption == LOC_NAV);
+			LcdString(F("Nav.do punktu "), markedMenuOption == LOC_NAV);
 			LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
 			LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
 			break;
@@ -128,12 +141,67 @@ static void refreshView()
 			break;
 
 		case LOC_SDREC:
+			LcdClear();
+			LcdString(F("-Zapis punktu-"));
+			if (sdCardSaveCurrentLocation())
+			{
+				LcdGoToXY(15, 2);
+				LcdString(F("Zapisano!"));
+			}
+			else
+			{
+				LcdGoToXY(0, 2);
+				LcdString(F("GPS not fixed!"));
+			}
+			
+			delay(2000);
+			currentView = LOC_MENU;
+			refreshView();
+			break;
+
+		case LOC_NAV:
+			markedSavedLocationEntry = 0;
+			showSavedLocations();
+			break;
+
+		case LOC_NAV2:
 
 			break;
 
 		default:
 			LcdClear();
 	}
+}
+
+void showSavedLocations()
+{
+	char buffer[12];
+	float flat, flon;
+
+	File gpsFile = SD.open(gpsFileName, FILE_READ);
+
+	for (byte i = 0; i <= markedSavedLocationEntry; i++)
+	{
+		flat = gpsFile.parseFloat();
+		flon = gpsFile.parseFloat();
+	}
+
+	if (flat == 0.0)
+	{
+		markedSavedLocationEntry--;
+		showSavedLocations();
+	}
+	else
+	{
+		LcdClear();
+		LcdString(F("----Nawiguj---"));
+		LcdGoToXY(20, 2);
+		LcdString(dtostrf(flat, 0, 6, buffer));
+		LcdGoToXY(20, 3);
+		LcdString(dtostrf(flon, 0, 6, buffer));
+	}
+
+	gpsFile.close();
 }
 
 static int freeRam()
@@ -166,7 +234,7 @@ static void moveMenu(bool isDirectionUp)
 			: markedMenuOption + 1);
 }
 
-static int ReadMagnetometer()
+static int readMagnetometer()
 {
 	MagnetometerScaled scaledValue = compass.ReadScaledAxis();
 	float heading = atan2(scaledValue.YAxis, scaledValue.XAxis);
@@ -179,21 +247,27 @@ static int ReadMagnetometer()
 	return (int)heading;
 }
 
-static void SdCardCheck()
+static bool sdCardSaveCurrentLocation()
 {
-	LcdString(F("Init SD... "));
-	Serial.print(F("Init SD... "));
+	float flat, flon;
+	mySmartdelay(1000);
+	gps.f_get_position(&flat, &flon);
 
-	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
-	{
-		LcdString(F("SD card failure! "));
-		Serial.println(F("SD card failure! "));
-	}
-	else 
-	{
-		LcdString(F("SD card ok! "));
-		Serial.println(F("SD card ok! "));
-	}
+	if (flat == TinyGPS::GPS_INVALID_F_ANGLE || flon == TinyGPS::GPS_INVALID_F_ANGLE)
+		return false;
+
+	char buffer[12];
+
+	File gpsFile = SD.open(gpsFileName, FILE_WRITE);
+
+	gpsFile.print(dtostrf(flat, 0, 6, buffer));
+	gpsFile.print(" ");
+	gpsFile.print(dtostrf(flon, 0, 6, buffer));
+	gpsFile.println();
+
+	gpsFile.close();
+
+	return true;
 }
 
 void loop()
@@ -210,22 +284,20 @@ void loop()
 
 	if (DOWN_buttonState == HIGH && DOWN_previousButtonState == LOW)
 	{
-		ButtonClicked(DOWN_KEY);
+		buttonClicked(DOWN_KEY);
 	}
 	else if (UP_buttonState == HIGH && UP_previousButtonState == LOW)
 	{
-		ButtonClicked(UP_KEY);
+		buttonClicked(UP_KEY);
 	}
 	else if (EXECUTE_buttonState == HIGH && EXECUTE_previousButtonState == LOW)
 	{
-		ButtonClicked(EXECUTE_KEY);
+		buttonClicked(EXECUTE_KEY);
 	}
 	else if (EXIT_buttonState == HIGH && EXIT_previousButtonState == LOW)
 	{
 		Serial.println(freeRam());
-		SdCardCheck();
-
-		ButtonClicked(EXIT_KEY);
+		buttonClicked(EXIT_KEY);
 	}
 
 	timer.run();
@@ -235,7 +307,7 @@ void magnetometerRefreshTimerElapsed()
 {
 	LcdImage(circleImg, 20, 2, 45, 4);
 
-	magnetometerCurrentValue = ReadMagnetometer();
+	magnetometerCurrentValue = readMagnetometer();
 
 	LcdGoToXY(33, 1);
 	LcdString(F("   "));
@@ -329,24 +401,47 @@ void printNorthDirection()
 	LcdString("N");
 }
 
-void ButtonClicked(byte buttonId)
+void moveLocationsList(bool isDirectionUp)
+{
+	markedSavedLocationEntry = isDirectionUp
+		? (markedSavedLocationEntry == 0
+			? 0
+			: markedSavedLocationEntry - 1)
+		: markedSavedLocationEntry + 1;
+}
+
+void buttonClicked(byte buttonId)
 {
 	switch (buttonId)
 	{
 		case DOWN_KEY:
-			if (currentView == LOC_MENU) moveMenu(false);
+			if (currentView == LOC_MENU)
+				moveMenu(false);
+			else if (currentView == LOC_NAV)
+				moveLocationsList(false);
 			break;
 		case UP_KEY:
-			if (currentView == LOC_MENU) moveMenu(true);
+			if (currentView == LOC_MENU)
+				moveMenu(true);
+			else if (currentView == LOC_NAV)
+				moveLocationsList(true);
 			break;
 		case EXECUTE_KEY:
 			if (currentView == LOC_MENU)
 				currentView = markedMenuOption;
 			break;
 		case EXIT_KEY:
-			currentView = LOC_MENU;
-			timer.disable(magnetometerRefreshTimer);
-			timer.disable(gpsDataRefreshTimer);
+			if (currentView == LOC_NAV2)
+			{
+				currentView = LOC_NAV;
+				timer.disable(navigationRefreshTimer);
+			}
+			else
+			{
+				currentView = LOC_MENU;
+				timer.disable(magnetometerRefreshTimer);
+				timer.disable(gpsDataRefreshTimer);
+			}
 			break;
 	}
 

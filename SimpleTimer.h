@@ -40,7 +40,7 @@ class SimpleTimer {
 
 public:
 	// maximum number of timers
-	const static byte MAX_TIMERS = 2;
+	const static byte MAX_TIMERS = 3;
 
 	// setTimer() constants
 	const static byte RUN_FOREVER = 0;
@@ -104,9 +104,6 @@ private:
 
 	// delay values
 	int delays[MAX_TIMERS];
-
-	// number of runs to be executed for each timer
-	byte maxNumRuns[MAX_TIMERS];
 
 	// number of executed runs for each timer
 	byte numRuns[MAX_TIMERS];

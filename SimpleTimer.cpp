@@ -73,19 +73,7 @@ void SimpleTimer::run() {
 				if (enabled[i]) {
 
 					// "run forever" timers must always be executed
-					if (maxNumRuns[i] == RUN_FOREVER) {
-						toBeCalled[i] = DEFCALL_RUNONLY;
-					}
-					// other timers get executed the specified number of times
-					else if (numRuns[i] < maxNumRuns[i]) {
-						toBeCalled[i] = DEFCALL_RUNONLY;
-						numRuns[i]++;
-
-						// after the last run, delete the timer
-						if (numRuns[i] >= maxNumRuns[i]) {
-							toBeCalled[i] = DEFCALL_RUNANDDEL;
-						}
-					}
+					toBeCalled[i] = DEFCALL_RUNONLY;
 				}
 			}
 		}
@@ -145,7 +133,6 @@ byte SimpleTimer::setTimer(long d, timer_callback f, int n) {
 
 	delays[freeTimer] = d;
 	callbacks[freeTimer] = f;
-	maxNumRuns[freeTimer] = n;
 	enabled[freeTimer] = true;
 	prev_millis[freeTimer] = elapsed();
 
