@@ -266,9 +266,6 @@ void loop()
 void magnetometerRefreshTimerElapsed()
 {
 	magnetometerCurrentValue = ReadMagnetometer();
-	Serial.print("Pomiar: ");
-	Serial.print(magnetometerCurrentValue);
-	Serial.println(" ");
 
 	char buffer[4];
 	String str = String(magnetometerCurrentValue);
