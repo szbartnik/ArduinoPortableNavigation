@@ -4,6 +4,7 @@
 #include <Wire.h>
 
 #include "InitScreen.h"
+#include "Circle.h"
 
 #define PGMT( pgm_ptr ) ( reinterpret_cast< const __FlashStringHelper * >( pgm_ptr ) )
 #define LOC_MENU  -1
@@ -14,6 +15,7 @@
 
 // Libraries
 #include <SD.h>
+//#include "SimpleTimer.h"
 #include "Lcd.h"
 #include "HMC5883L.h"
 #include "TinyGPS.h"
@@ -21,6 +23,7 @@
 HMC5883L compass;
 TinyGPS gps;
 Sd2Card card;
+//SimpleTimer timer;
 
 static const byte chipSelect = 10;
 
@@ -43,6 +46,10 @@ byte EXIT_previousButtonState = LOW;
 
 char currentView;
 char markedMenuOption;
+
+//int magnetometerRefreshTimer;
+
+int magnetometerCurrentValue;
 
 void setup(void)
 {
@@ -72,21 +79,28 @@ void setup(void)
 
 static void refreshView()
 {
-	// If we are going to show main menu
-	if (currentView == LOC_MENU)
-	{
-		LcdGoToXY(0, 0);
-		LcdString(F("-----Menu-----"));
-		LcdString(F("              "));
-		LcdString(F("Nagrywanie SD "), markedMenuOption == LOC_SDREC);
-		LcdString(F("Nav. do punktu"), markedMenuOption == LOC_NAV);
-		LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
-		LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
-	}
-	// If we are going to show specific viewy
-	else
-	{
+	LcdGoToXY(0, 0);
 
+	switch (currentView)
+	{
+		case LOC_MENU:
+			LcdString(F("-----Menu-----"));
+			LcdString(F("              "));
+			LcdString(F("Nagrywanie SD "), markedMenuOption == LOC_SDREC);
+			LcdString(F("Nav. do punktu"), markedMenuOption == LOC_NAV);
+			LcdString(F("Pozycja GPS   "), markedMenuOption == LOC_GPSPOS);
+			LcdString(F("Kompas        "), markedMenuOption == LOC_MAG);
+			break;
+		case LOC_MAG:
+			LcdClear();
+			LcdString(F("----Kompas----"));
+			LcdString(F("              "));
+			LcdImage(circleImg, 20, 2, 45, 4);
+
+			magnetometerRefreshTimerElapsed();
+			break;
+		default:
+			LcdClear();
 	}
 }
 
@@ -97,9 +111,9 @@ static int freeRam()
 	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
 }
 
-static void smartdelay(unsigned long ms)
+static void mySmartdelay(unsigned int ms)
 {
-	unsigned long start = millis();
+	unsigned int start = millis();
 	do
 	{
 		while (gpsSerial.available())
@@ -109,7 +123,7 @@ static void smartdelay(unsigned long ms)
 	} while (millis() - start < ms);
 }
 
-static void print_float(float val, float invalid, int len, int prec)
+static void print_float(float val, float invalid, byte len, byte prec)
 {
 	if (val == invalid)
 	{
@@ -120,13 +134,13 @@ static void print_float(float val, float invalid, int len, int prec)
 	else
 	{
 		Serial.print(val, prec);
-		int vi = abs((int)val);
-		int flen = prec + (val < 0.0 ? 2 : 1); // . and -
+		byte vi = abs((byte)val);
+		byte flen = prec + (val < 0.0 ? 2 : 1); // . and -
 		flen += vi >= 1000 ? 4 : vi >= 100 ? 3 : vi >= 10 ? 2 : 1;
-		for (int i = flen; i<len; ++i)
+		for (byte i = flen; i<len; ++i)
 			Serial.print(' ');
 	}
-	smartdelay(0);
+	mySmartdelay(0);
 }
 
 static void print_int(unsigned long val, unsigned long invalid, int len)
@@ -142,15 +156,15 @@ static void print_int(unsigned long val, unsigned long invalid, int len)
 	if (len > 0)
 		sz[len - 1] = ' ';
 	Serial.print(sz);
-	smartdelay(0);
+	mySmartdelay(0);
 }
 
-static void print_str(const char *str, int len)
+static void print_str(const char *str, byte len)
 {
-	int slen = strlen(str);
-	for (int i = 0; i<len; ++i)
+	byte slen = strlen(str);
+	for (byte i = 0; i<len; ++i)
 		Serial.print(i<slen ? str[i] : ' ');
-	smartdelay(0);
+	mySmartdelay(0);
 }
 
 static void moveMenu(bool isDirectionUp)
@@ -166,7 +180,7 @@ static void moveMenu(bool isDirectionUp)
 
 static void GpsTest()
 {
-	smartdelay(1000);
+	mySmartdelay(1000);
 
 	float flat, flon;
 	static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
@@ -182,41 +196,21 @@ static void GpsTest()
 	Serial.println();
 }
 
-static void ReadMagnetometer()
+static int ReadMagnetometer()
 {
-	char buff[6];
+	MagnetometerScaled scaledValue = compass.ReadScaledAxis();
+	float heading = atan2(scaledValue.YAxis, scaledValue.XAxis);
 
-	MagnetometerRaw scaledValue = compass.ReadRawAxis();
+	heading += (4.0 + (37.0 / 60.0)) / (180 / M_PI); // correction of declination for Glewitz 
+	heading += heading < 0 ? 2 * PI : 0;             // angle correction 1
+	heading -= heading > 2 * PI ? 2 * PI : 0;        // angle correction 2
+	heading = heading * 180 / M_PI;                  // from radians to degrees
 
-	String xStr = String(scaledValue.XAxis);
-	xStr.toCharArray(buff, 6);
-	LcdGoToXY(0, 1);
-	LcdString("X: ");
-	LcdString(buff);
-	Serial.write("X: ");
-	Serial.write(buff);
-
-	String yStr = String(scaledValue.YAxis);
-	yStr.toCharArray(buff, 6);
-	LcdGoToXY(0, 2);
-	LcdString("Y: ");
-	LcdString(buff);
-	Serial.write("Y: ");
-	Serial.write(buff);
-
-	String zStr = String(scaledValue.ZAxis);
-	zStr.toCharArray(buff, 6);
-	LcdGoToXY(0, 3);
-	LcdString("Z: ");
-	LcdString(buff);
-	Serial.write("Z: ");
-	Serial.write(buff);
+	return (int)heading;
 }
 
 static void SdCardCheck()
 {
-	Serial.println(freeRam());
-
 	LcdString(F("Init SD... "));
 	Serial.write("Init SD... ");
 
@@ -255,16 +249,36 @@ void loop()
 	}
 	else if (EXECUTE_buttonState == HIGH && EXECUTE_previousButtonState == LOW)
 	{
-		ReadMagnetometer();
 		ButtonClicked(EXECUTE_KEY);
 	}
 	else if (EXIT_buttonState == HIGH && EXIT_previousButtonState == LOW)
 	{
+		Serial.println(freeRam());
 		SdCardCheck();
 		GpsTest();
 
 		ButtonClicked(EXIT_KEY);
 	}
+
+	//timer.run();
+}
+
+void magnetometerRefreshTimerElapsed()
+{
+	magnetometerCurrentValue = ReadMagnetometer();
+	Serial.write("Pomiar: ");
+	print_int(magnetometerCurrentValue, -1, 4);
+	Serial.write(" ");
+
+	char buffer[4];
+	String str = String(magnetometerCurrentValue);
+	str.toCharArray(buffer, 4);
+
+	if (magnetometerCurrentValue < 10) LcdGoToXY(39, 1);
+	else if(magnetometerCurrentValue < 100) LcdGoToXY(36, 1);
+	else LcdGoToXY(33, 1);
+
+	LcdString(buffer);
 }
 
 void ButtonClicked(byte buttonId)
@@ -272,10 +286,10 @@ void ButtonClicked(byte buttonId)
 	switch (buttonId)
 	{
 		case DOWN_KEY:
-			moveMenu(false);
+			if (currentView == LOC_MENU) moveMenu(false);
 			break;
 		case UP_KEY:
-			moveMenu(true);
+			if (currentView == LOC_MENU) moveMenu(true);
 			break;
 		case EXECUTE_KEY:
 			if (currentView == LOC_MENU)
@@ -284,6 +298,8 @@ void ButtonClicked(byte buttonId)
 		case EXIT_KEY:
 			if (currentView != LOC_MENU)
 				currentView = LOC_MENU;
+			else
+				return;
 			break;
 	}
 

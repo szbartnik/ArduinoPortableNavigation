@@ -56,7 +56,7 @@ void LcdString(const __FlashStringHelper* pData, bool inversed)
 	LcdString(buffer, inversed);
 }
 
-void LcdGoToXY(int x, int y)
+void LcdGoToXY(byte x, byte y)
 {
 	LcdWrite(0, 0x80 | x);  // Column.
 	LcdWrite(0, 0x40 | y);  // Row.  

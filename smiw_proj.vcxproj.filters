@@ -42,6 +42,12 @@
     <ClInclude Include="Visual Micro\.SMiW-project.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SimpleTimer.h">
+      <Filter>Header Files\Libraries</Filter>
+    </ClInclude>
+    <ClInclude Include="Circle.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Lcd.cpp">
@@ -55,6 +61,9 @@
     </ClCompile>
     <ClCompile Include="InitScreen.h">
       <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SimpleTimer.cpp">
+      <Filter>Source Files\Libraries</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -26,7 +26,7 @@
 
 // ##### Functions declarations ##### //
 
-void LcdGoToXY(int, int);
+void LcdGoToXY(byte, byte);
 void LcdCharacter(char character);
 void LcdClear(void);
 void LcdInitialise(void);
