@@ -49,6 +49,7 @@ char markedMenuOption;
 
 byte magnetometerRefreshTimer;
 byte gpsDataRefreshTimer;
+byte navigationRefreshTimer;
 
 int magnetometerCurrentValue;
 
@@ -84,6 +85,10 @@ void setup(void)
 	// Gps timer initialization
 	gpsDataRefreshTimer = timer.setInterval(2000, gpsDataRefreshTimerElapsed);
 	timer.disable(gpsDataRefreshTimer);
+
+	// Navigation timer initialization
+	navigationRefreshTimer = timer.setInterval(2000, navigationRefreshTimerElapsed);
+	timer.disable(navigationRefreshTimer);
 }
 
 static void refreshView()
@@ -120,6 +125,10 @@ static void refreshView()
 			LcdGoToXY(0, 5);
 			LcdString(F("Speed:"), true);
 			timer.enable(gpsDataRefreshTimer);
+			break;
+
+		case LOC_SDREC:
+
 			break;
 
 		default:
@@ -285,12 +294,10 @@ void gpsDataRefreshTimerElapsed()
 
 	LcdGoToXY(30, 4);
 	if (flat == TinyGPS::GPS_INVALID_F_ALTITUDE) {
-		LcdString(F("******"));
+		LcdString(F("*********"));
 	}
 	else{
-		LcdString(F("      "));
-		LcdGoToXY(30, 4);
-		LcdString(dtostrf(flat, 6, 2, buffer));
+		LcdString(dtostrf(flat, 9, 2, buffer));
 	}
 
 	// Speed (flat is now speed)
@@ -298,13 +305,16 @@ void gpsDataRefreshTimerElapsed()
 
 	LcdGoToXY(42, 5);
 	if (flat == TinyGPS::GPS_INVALID_F_SPEED) {
-		LcdString(F("******"));
+		LcdString(F("*******"));
 	}
 	else{
-		LcdString(F("      "));
-		LcdGoToXY(42, 5);
-		LcdString(dtostrf(flat, 4, 2, buffer));
+		LcdString(dtostrf(flat, 7, 2, buffer));
 	}
+}
+
+void navigationRefreshTimerElapsed()
+{
+
 }
 
 void printNorthDirection()
