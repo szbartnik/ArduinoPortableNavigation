@@ -111,8 +111,8 @@ void SimpleTimer::run() {
 
 // find the first available slot
 // return -1 if none found
-int SimpleTimer::findFirstFreeSlot() {
-	int i;
+byte SimpleTimer::findFirstFreeSlot() {
+	byte i;
 
 	// all slots are used
 	if (numTimers >= MAX_TIMERS) {
@@ -131,8 +131,8 @@ int SimpleTimer::findFirstFreeSlot() {
 }
 
 
-int SimpleTimer::setTimer(long d, timer_callback f, int n) {
-	int freeTimer;
+byte SimpleTimer::setTimer(long d, timer_callback f, int n) {
+	byte freeTimer;
 
 	freeTimer = findFirstFreeSlot();
 	if (freeTimer < 0) {
@@ -155,7 +155,7 @@ int SimpleTimer::setTimer(long d, timer_callback f, int n) {
 }
 
 
-int SimpleTimer::setInterval(long d, timer_callback f) {
+byte SimpleTimer::setInterval(long d, timer_callback f) {
 	return setTimer(d, f, RUN_FOREVER);
 }
 
@@ -204,7 +204,7 @@ boolean SimpleTimer::isEnabled(int numTimer) {
 }
 
 
-void SimpleTimer::enable(int numTimer) {
+void SimpleTimer::enable(byte numTimer) {
 	if (numTimer >= MAX_TIMERS) {
 		return;
 	}
@@ -213,7 +213,7 @@ void SimpleTimer::enable(int numTimer) {
 }
 
 
-void SimpleTimer::disable(int numTimer) {
+void SimpleTimer::disable(byte numTimer) {
 	if (numTimer >= MAX_TIMERS) {
 		return;
 	}

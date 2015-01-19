@@ -53,13 +53,13 @@ public:
 	void run();
 
 	// call function f every d milliseconds
-	int setInterval(long d, timer_callback f);
+	byte setInterval(long d, timer_callback f);
 
 	// call function f once after d milliseconds
 	int setTimeout(long d, timer_callback f);
 
 	// call function f every d milliseconds for n times
-	int setTimer(long d, timer_callback f, int n);
+	byte setTimer(long d, timer_callback f, int n);
 
 	// destroy the specified timer
 	void deleteTimer(int numTimer);
@@ -71,10 +71,10 @@ public:
 	boolean isEnabled(int numTimer);
 
 	// enables the specified timer
-	void enable(int numTimer);
+	void enable(byte numTimer);
 
 	// disables the specified timer
-	void disable(int numTimer);
+	void disable(byte numTimer);
 
 	// enables the specified timer if it's currently disabled,
 	// and vice-versa
@@ -93,7 +93,7 @@ private:
 	const static byte DEFCALL_RUNANDDEL = 2;      // call the callback function and delete the timer
 
 	// find the first available slot
-	int findFirstFreeSlot();
+	byte findFirstFreeSlot();
 
 	// value returned by the millis() function
 	// in the previous run() call

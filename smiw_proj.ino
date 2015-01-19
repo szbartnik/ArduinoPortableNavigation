@@ -47,7 +47,7 @@ byte EXIT_previousButtonState = LOW;
 char currentView;
 char markedMenuOption;
 
-int magnetometerRefreshTimer;
+byte magnetometerRefreshTimer;
 
 int magnetometerCurrentValue;
 
@@ -83,7 +83,7 @@ void setup(void)
 static void refreshView()
 {
 	LcdGoToXY(0, 0);
-
+	
 	switch (currentView)
 	{
 		case LOC_MENU:
@@ -213,17 +213,17 @@ static int ReadMagnetometer()
 static void SdCardCheck()
 {
 	LcdString(F("Init SD... "));
-	Serial.print("Init SD... ");
+	Serial.print(F("Init SD... "));
 
 	if (!card.init(SPI_HALF_SPEED, chipSelect)) 
 	{
 		LcdString(F("SD card failure! "));
-		Serial.println("SD card failure! ");
+		Serial.println(F("SD card failure! "));
 	}
 	else 
 	{
 		LcdString(F("SD card ok! "));
-		Serial.println("SD card ok! ");
+		Serial.println(F("SD card ok! "));
 	}
 }
 
@@ -238,7 +238,6 @@ void loop()
 	UP_buttonState = digitalRead(UP_KEY);
 	EXECUTE_buttonState = digitalRead(EXECUTE_KEY);
 	EXIT_buttonState = digitalRead(EXIT_KEY);
-
 
 	if (DOWN_buttonState == HIGH && DOWN_previousButtonState == LOW)
 	{
@@ -319,5 +318,5 @@ void ButtonClicked(byte buttonId)
 	}
 
 	refreshView();
-	delay(150);
+	delay(50);
 }
