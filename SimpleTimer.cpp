@@ -160,11 +160,6 @@ int SimpleTimer::setInterval(long d, timer_callback f) {
 }
 
 
-int SimpleTimer::setTimeout(long d, timer_callback f) {
-	return setTimer(d, f, RUN_ONCE);
-}
-
-
 void SimpleTimer::deleteTimer(int timerId) {
 	if (timerId >= MAX_TIMERS) {
 		return;

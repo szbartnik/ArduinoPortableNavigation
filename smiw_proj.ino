@@ -15,7 +15,7 @@
 
 // Libraries
 #include <SD.h>
-//#include "SimpleTimer.h"
+#include "SimpleTimer.h"
 #include "Lcd.h"
 #include "HMC5883L.h"
 #include "TinyGPS.h"
@@ -23,7 +23,7 @@
 HMC5883L compass;
 TinyGPS gps;
 Sd2Card card;
-//SimpleTimer timer;
+SimpleTimer timer;
 
 static const byte chipSelect = 10;
 
@@ -47,7 +47,7 @@ byte EXIT_previousButtonState = LOW;
 char currentView;
 char markedMenuOption;
 
-//int magnetometerRefreshTimer;
+int magnetometerRefreshTimer;
 
 int magnetometerCurrentValue;
 
@@ -64,7 +64,7 @@ void setup(void)
 	pinMode(chipSelect, OUTPUT);
 
 	compass.SetMeasurementMode(Measurement_Continuous);
-	compass.SetScale(0.88);
+	compass.SetScale();
 
 	LcdInitialise();
 	LcdClear();
@@ -75,6 +75,9 @@ void setup(void)
 	currentView = -1;
 	markedMenuOption = 0;
 	refreshView();
+
+	magnetometerRefreshTimer = timer.setInterval(1500, magnetometerRefreshTimerElapsed);
+	timer.disable(magnetometerRefreshTimer);
 }
 
 static void refreshView()
@@ -94,10 +97,8 @@ static void refreshView()
 		case LOC_MAG:
 			LcdClear();
 			LcdString(F("----Kompas----"));
-			LcdString(F("              "));
-			LcdImage(circleImg, 20, 2, 45, 4);
-
-			magnetometerRefreshTimerElapsed();
+			
+			timer.enable(magnetometerRefreshTimer);
 			break;
 		default:
 			LcdClear();
@@ -260,20 +261,25 @@ void loop()
 		ButtonClicked(EXIT_KEY);
 	}
 
-	//timer.run();
+	timer.run();
 }
 
 void magnetometerRefreshTimerElapsed()
 {
+	LcdImage(circleImg, 20, 2, 45, 4);
+
 	magnetometerCurrentValue = ReadMagnetometer();
 
-	char buffer[4];
-	String str = String(magnetometerCurrentValue);
-	str.toCharArray(buffer, 4);
+	LcdGoToXY(33, 1);
+	LcdString(F("   "));
 
 	if (magnetometerCurrentValue < 10) LcdGoToXY(39, 1);
 	else if(magnetometerCurrentValue < 100) LcdGoToXY(36, 1);
 	else LcdGoToXY(33, 1);
+
+	char buffer[4];
+	String str = String(magnetometerCurrentValue);
+	str.toCharArray(buffer, 4);
 
 	LcdString(buffer);
 
@@ -307,10 +313,8 @@ void ButtonClicked(byte buttonId)
 				currentView = markedMenuOption;
 			break;
 		case EXIT_KEY:
-			if (currentView != LOC_MENU)
-				currentView = LOC_MENU;
-			else
-				return;
+			currentView = LOC_MENU;
+			timer.disable(magnetometerRefreshTimer);
 			break;
 	}
 

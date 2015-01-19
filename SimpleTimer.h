@@ -40,11 +40,11 @@ class SimpleTimer {
 
 public:
 	// maximum number of timers
-	const static int MAX_TIMERS = 10;
+	const static byte MAX_TIMERS = 2;
 
 	// setTimer() constants
-	const static int RUN_FOREVER = 0;
-	const static int RUN_ONCE = 1;
+	const static byte RUN_FOREVER = 0;
+	const static byte RUN_ONCE = 1;
 
 	// constructor
 	SimpleTimer();
@@ -88,9 +88,9 @@ public:
 
 private:
 	// deferred call constants
-	const static int DEFCALL_DONTRUN = 0;       // don't call the callback function
-	const static int DEFCALL_RUNONLY = 1;       // call the callback function but don't delete the timer
-	const static int DEFCALL_RUNANDDEL = 2;      // call the callback function and delete the timer
+	const static byte DEFCALL_DONTRUN = 0;       // don't call the callback function
+	const static byte DEFCALL_RUNONLY = 1;       // call the callback function but don't delete the timer
+	const static byte DEFCALL_RUNANDDEL = 2;      // call the callback function and delete the timer
 
 	// find the first available slot
 	int findFirstFreeSlot();
@@ -103,22 +103,22 @@ private:
 	timer_callback callbacks[MAX_TIMERS];
 
 	// delay values
-	long delays[MAX_TIMERS];
+	int delays[MAX_TIMERS];
 
 	// number of runs to be executed for each timer
-	int maxNumRuns[MAX_TIMERS];
+	byte maxNumRuns[MAX_TIMERS];
 
 	// number of executed runs for each timer
-	int numRuns[MAX_TIMERS];
+	byte numRuns[MAX_TIMERS];
 
 	// which timers are enabled
 	boolean enabled[MAX_TIMERS];
 
 	// deferred function call (sort of) - N.B.: this array is only used in run()
-	int toBeCalled[MAX_TIMERS];
+	byte toBeCalled[MAX_TIMERS];
 
 	// actual number of timers in use
-	int numTimers;
+	byte numTimers;
 };
 
 #endif
