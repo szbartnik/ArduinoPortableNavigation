@@ -48,6 +48,8 @@ byte EXIT_previousButtonState = LOW;
 char currentView;
 char markedMenuOption;
 char markedSavedLocationEntry;
+float markedLocationLatitude;
+float markedLocationLongtitude;
 
 byte magnetometerRefreshTimer;
 byte gpsDataRefreshTimer;
@@ -165,7 +167,9 @@ static void refreshView()
 			break;
 
 		case LOC_NAV2:
-
+			LcdClear();
+			LcdString(F("----Nawiguj----"));
+			timer.enable(navigationRefreshTimer);
 			break;
 
 		default:
@@ -176,8 +180,7 @@ static void refreshView()
 void showSavedLocations()
 {
 	char buffer[12];
-	float flat, flon;
-
+	
 	File gpsFile = SD.open(gpsFileName, FILE_WRITE);
 	gpsFile.close();
 
@@ -185,16 +188,16 @@ void showSavedLocations()
 
 	for (byte i = 0; i <= markedSavedLocationEntry; i++)
 	{
-		flat = gpsFile.parseFloat();
-		flon = gpsFile.parseFloat();
+		markedLocationLatitude = gpsFile.parseFloat();
+		markedLocationLongtitude = gpsFile.parseFloat();
 	}
 
 	gpsFile.close();
 
 	LcdClear();
-	LcdString(F("----Nawiguj---"));
+	LcdString(F("-Wybierz cel-"));
 
-	if (flat == 0.0 || markedSavedLocationEntry < 0)
+	if (markedLocationLatitude == 0.0 || markedSavedLocationEntry < 0)
 	{
 		if (--markedSavedLocationEntry < 0)
 		{
@@ -206,9 +209,9 @@ void showSavedLocations()
 	else
 	{
 		LcdGoToXY(15, 2);
-		LcdString(dtostrf(flat, 0, 6, buffer));
+		LcdString(dtostrf(markedLocationLatitude, 0, 6, buffer));
 		LcdGoToXY(15, 3);
-		LcdString(dtostrf(flon, 0, 6, buffer));
+		LcdString(dtostrf(markedLocationLongtitude, 0, 6, buffer));
 	}
 }
 
@@ -412,8 +415,8 @@ void printNorthDirection()
 void moveLocationsList(bool isDirectionUp)
 {
 	markedSavedLocationEntry = isDirectionUp
-		? (markedSavedLocationEntry == 0
-			? 0
+		? (markedSavedLocationEntry < 1
+			? markedSavedLocationEntry
 			: markedSavedLocationEntry - 1)
 		: markedSavedLocationEntry + 1;
 }
@@ -437,6 +440,8 @@ void buttonClicked(byte buttonId)
 		case EXECUTE_KEY:
 			if (currentView == LOC_MENU)
 				currentView = markedMenuOption;
+			else if (currentView == LOC_NAV && markedSavedLocationEntry >= 0)
+				currentView = LOC_NAV2;
 			break;
 		case EXIT_KEY:
 			if (currentView == LOC_NAV2)
