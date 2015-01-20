@@ -51,7 +51,7 @@ MagnetometerScaled HMC5883L::ReadScaledAxis()
 int HMC5883L::SetScale()
 {
 	uint8_t regValue = 0x00;
-	m_Scale = 0.73;
+	m_Scale = 1.3;
 	
 	// Setting is in the top 3 bits of the register.
 	regValue = regValue << 5;

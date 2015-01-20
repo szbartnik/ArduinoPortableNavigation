@@ -114,7 +114,7 @@ static void refreshView()
 		case LOC_MAG:
 			LcdClear();
 			LcdString(F("----Kompas----"));
-			commonTimer = timer.setInterval(1500, magnetometerRefreshTimerElapsed);
+			commonTimer = timer.setInterval(1000, magnetometerRefreshTimerElapsed);
 			break;
 
 		case LOC_GPSPOS:
@@ -129,7 +129,7 @@ static void refreshView()
 			LcdString(F("Alt:"), true);
 			LcdGoToXY(0, 5);
 			LcdString(F("Speed:"), true);
-			commonTimer = timer.setInterval(2000, gpsDataRefreshTimerElapsed);
+			commonTimer = timer.setInterval(1000, gpsDataRefreshTimerElapsed);
 			break;
 
 		case LOC_SDREC:
@@ -158,7 +158,7 @@ static void refreshView()
 		case LOC_NAV2:
 			LcdClear();
 			LcdString(F("----Nawiguj---"));
-			commonTimer = timer.setInterval(2000, navigationRefreshTimerElapsed);
+			commonTimer = timer.setInterval(1000, navigationRefreshTimerElapsed);
 			break;
 
 		default:
@@ -239,7 +239,7 @@ static int readMagnetometer()
 	MagnetometerScaled scaledValue = compass.ReadScaledAxis();
 	float heading = atan2(scaledValue.YAxis, scaledValue.XAxis);
 
-	heading += (4.0 + (37.0 / 60.0)) / (180 / M_PI); // correction of declination for Glewitz 
+	heading += 80.58 / 1000.0;
 	heading += heading < 0 ? 2 * PI : 0;             // angle correction 1
 	heading -= heading > 2 * PI ? 2 * PI : 0;        // angle correction 2
 	heading = heading * 180 / M_PI;                  // from radians to degrees
@@ -399,10 +399,10 @@ void navigationRefreshTimerElapsed()
 	else
 	{
 		int magnetometerCurrentValue = readMagnetometer()
-			+ TinyGPS::course_to(flat, flon, markedLocationLatitude, markedLocationLongtitude);
+			- TinyGPS::course_to(flat, flon, markedLocationLatitude, markedLocationLongtitude);
 
-		if (magnetometerCurrentValue >= 360)
-			magnetometerCurrentValue -= 360;
+		if (magnetometerCurrentValue < 0)
+			magnetometerCurrentValue += 360;
 
 		LcdImage(circleImg, 20, 2, 45, 4);
 
