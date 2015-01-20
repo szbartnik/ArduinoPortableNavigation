@@ -51,9 +51,7 @@ char markedSavedLocationEntry;
 float markedLocationLatitude;
 float markedLocationLongtitude;
 
-byte magnetometerRefreshTimer;
-byte gpsDataRefreshTimer;
-byte navigationRefreshTimer;
+byte commonTimer;
 
 void setup(void)
 {
@@ -91,23 +89,10 @@ void setup(void)
     markedMenuOption = 0;
     markedSavedLocationEntry = 0;
     refreshView();
-
-    // Magnetometer timer initialization
-    magnetometerRefreshTimer = timer.setInterval(1500, magnetometerRefreshTimerElapsed);
-    timer.disable(magnetometerRefreshTimer);
-
-    // Gps timer initialization
-    gpsDataRefreshTimer = timer.setInterval(2000, gpsDataRefreshTimerElapsed);
-    timer.disable(gpsDataRefreshTimer);
-
-    // Navigation timer initialization
-    navigationRefreshTimer = timer.setInterval(2000, navigationRefreshTimerElapsed);
-    timer.disable(navigationRefreshTimer);
 }
 
 static void refreshView()
 {
-	Serial.println(freeRam());
     LcdGoToXY(0, 0);
     
     switch (currentView)
@@ -124,7 +109,7 @@ static void refreshView()
         case LOC_MAG:
             LcdClear();
             LcdString(F("----Kompas----"));
-            timer.enable(magnetometerRefreshTimer);
+            commonTimer = timer.setInterval(1500, magnetometerRefreshTimerElapsed);
             break;
 
         case LOC_GPSPOS:
@@ -139,7 +124,7 @@ static void refreshView()
             LcdString(F("Alt:"), true);
             LcdGoToXY(0, 5);
             LcdString(F("Speed:"), true);
-            timer.enable(gpsDataRefreshTimer);
+            commonTimer = timer.setInterval(2000, gpsDataRefreshTimerElapsed);
             break;
 
         case LOC_SDREC:
@@ -168,7 +153,7 @@ static void refreshView()
         case LOC_NAV2:
             LcdClear();
             LcdString(F("----Nawiguj---"));
-            timer.enable(navigationRefreshTimer);
+            commonTimer = timer.setInterval(2000, navigationRefreshTimerElapsed);
             break;
 
         default:
@@ -395,9 +380,9 @@ void gpsDataRefreshTimerElapsed()
 
 void navigationRefreshTimerElapsed()
 {
-    //LcdImage(circleImg, 20, 2, 45, 4);
+    LcdImage(circleImg, 20, 2, 45, 4);
 
-    //magnetometerCurrentValue = readMagnetometer();
+    int magnetometerCurrentValue = readMagnetometer();
 
 
 }
@@ -449,17 +434,13 @@ void buttonClicked(byte buttonId)
             break;
         case EXIT_KEY:
             Serial.println(freeRam());
+
             if (currentView == LOC_NAV2)
-            {
                 currentView = LOC_NAV;
-                timer.disable(navigationRefreshTimer);
-            }
             else
-            {
                 currentView = LOC_MENU;
-                timer.disable(magnetometerRefreshTimer);
-                timer.disable(gpsDataRefreshTimer);
-            }
+
+            timer.deleteTimer(commonTimer);
             break;
     }
 
