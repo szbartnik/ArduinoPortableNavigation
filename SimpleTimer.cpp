@@ -148,10 +148,6 @@ byte SimpleTimer::setInterval(long d, timer_callback f) {
 
 
 void SimpleTimer::deleteTimer(int timerId) {
-	if (timerId >= MAX_TIMERS) {
-		return;
-	}
-
 	// nothing to delete if no timers are in use
 	if (numTimers == 0) {
 		return;
@@ -174,46 +170,26 @@ void SimpleTimer::deleteTimer(int timerId) {
 
 // function contributed by code@rowansimms.com
 void SimpleTimer::restartTimer(int numTimer) {
-	if (numTimer >= MAX_TIMERS) {
-		return;
-	}
-
 	prev_millis[numTimer] = elapsed();
 }
 
 
 boolean SimpleTimer::isEnabled(int numTimer) {
-	if (numTimer >= MAX_TIMERS) {
-		return false;
-	}
-
 	return enabled[numTimer];
 }
 
 
 void SimpleTimer::enable(byte numTimer) {
-	if (numTimer >= MAX_TIMERS) {
-		return;
-	}
-
 	enabled[numTimer] = true;
 }
 
 
 void SimpleTimer::disable(byte numTimer) {
-	if (numTimer >= MAX_TIMERS) {
-		return;
-	}
-
 	enabled[numTimer] = false;
 }
 
 
 void SimpleTimer::toggle(int numTimer) {
-	if (numTimer >= MAX_TIMERS) {
-		return;
-	}
-
 	enabled[numTimer] = !enabled[numTimer];
 }
 

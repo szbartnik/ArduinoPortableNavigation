@@ -14,6 +14,8 @@
 #define LOC_MAG    3
 #define LOC_NAV2   4
 
+#define DEB_OFF
+
 // Libraries
 #include <SD.h>
 #include "SimpleTimer.h"
@@ -25,15 +27,17 @@ HMC5883L compass;
 TinyGPS gps;
 SimpleTimer timer;
 
+prog_uchar txtStarsX9[] PROGMEM = {"*********"};
+prog_uchar txtGpsNotFixed[] PROGMEM = {"GPS not fixed!"};
 static const char* gpsFileName = "gps.txt";
 static const byte SD_CHIP_SELECT = 10;
 
 SoftwareSerial gpsSerial(4, 3);
 
-static const byte DOWN_KEY = A3;
-static const byte UP_KEY = A2;
-static const byte EXECUTE_KEY = A1;
-static const byte EXIT_KEY = A0;
+#define DOWN_KEY A3
+#define UP_KEY A2
+#define EXECUTE_KEY A1
+#define EXIT_KEY A0
 
 byte DOWN_buttonState = LOW;
 byte UP_buttonState = LOW;
@@ -48,6 +52,7 @@ byte EXIT_previousButtonState = LOW;
 char currentView;
 char markedMenuOption;
 char markedSavedLocationEntry;
+
 float markedLocationLatitude;
 float markedLocationLongtitude;
 
@@ -56,7 +61,7 @@ byte commonTimer;
 void setup(void)
 {
 	gpsSerial.begin(9600);
-	Serial.begin(9600);
+	//Serial.begin(9600);
 
 	pinMode(DOWN_KEY, INPUT);
 	pinMode(UP_KEY, INPUT);
@@ -77,7 +82,7 @@ void setup(void)
 	LcdGoToXY(25, 2);
 
 	if (!SD.begin(SD_CHIP_SELECT)) {
-		LcdString(F("SD error!"));
+		LcdString(F("SD err!"));
 	}
 	else{
 		LcdString(F("SD ok!"));
@@ -138,7 +143,7 @@ static void refreshView()
 			else
 			{
 				LcdGoToXY(0, 2);
-				LcdString(F("GPS not fixed!"));
+				LcdString(PGMT(txtGpsNotFixed));
 			}
 			
 			delay(2000);
@@ -248,7 +253,7 @@ static bool sdCardSaveCurrentLocation()
 	mySmartdelay(1000);
 	gps.f_get_position(&flat, &flon);
 
-	if (flat == TinyGPS::GPS_INVALID_F_ANGLE || flon == TinyGPS::GPS_INVALID_F_ANGLE)
+	if (flat == TinyGPS::GPS_INVALID_F_ANGLE)
 		return false;
 
 	char buffer[12];
@@ -345,9 +350,9 @@ void gpsDataRefreshTimerElapsed()
 
 	LcdGoToXY(30, 2);
 	if (flat == TinyGPS::GPS_INVALID_F_ANGLE || flon == TinyGPS::GPS_INVALID_ANGLE) {
-		LcdString(F("*********"));
+		LcdString(PGMT(txtStarsX9));
 		LcdGoToXY(30, 3);
-		LcdString(F("*********"));
+		LcdString(PGMT(txtStarsX9));
 	}
 	else{
 		LcdString(dtostrf(flat, 9, 6, buffer));
@@ -360,7 +365,7 @@ void gpsDataRefreshTimerElapsed()
 
 	LcdGoToXY(30, 4);
 	if (flat == TinyGPS::GPS_INVALID_F_ALTITUDE) {
-		LcdString(F("*********"));
+		LcdString(PGMT(txtStarsX9));
 	}
 	else{
 		LcdString(dtostrf(flat, 9, 2, buffer));
@@ -380,11 +385,40 @@ void gpsDataRefreshTimerElapsed()
 
 void navigationRefreshTimerElapsed()
 {
-	LcdImage(circleImg, 20, 2, 45, 4);
+	float flat, flon;
+	char buffer[8];
 
-	int magnetometerCurrentValue = readMagnetometer();
+	mySmartdelay(1000);
+	gps.f_get_position(&flat, &flon);
 
-	printDirection(magnetometerCurrentValue, false);
+	if (flat == TinyGPS::GPS_INVALID_F_ANGLE)
+	{
+		LcdGoToXY(0, 3);
+		LcdString(PGMT(txtGpsNotFixed));
+	}
+	else
+	{
+		int magnetometerCurrentValue = readMagnetometer()
+			+ TinyGPS::course_to(flat, flon, markedLocationLatitude, markedLocationLongtitude);
+
+		if (magnetometerCurrentValue >= 360)
+			magnetometerCurrentValue -= 360;
+
+		LcdImage(circleImg, 20, 2, 45, 4);
+
+		LcdGoToXY(0, 1);
+		LcdString(F("   "));
+		String(magnetometerCurrentValue).toCharArray(buffer, 8);
+		LcdGoToXY(0, 1);
+		LcdString(buffer);
+
+		float distance = TinyGPS::distance_between(flat, flon, markedLocationLatitude, markedLocationLongtitude) / 1000;
+		LcdGoToXY(35, 1);
+		LcdString(dtostrf(distance, 8, 3, buffer));
+
+		printDirection(magnetometerCurrentValue, false);
+	}
+
 }
 
 void printDirection(int angle, bool isNorthIndicator)
@@ -434,7 +468,9 @@ void buttonClicked(byte buttonId)
 			else return;
 			break;
 		case EXIT_KEY:
+#ifdef DEB
 			Serial.println(freeRam());
+#endif
 
 			if (currentView == LOC_NAV2)
 				currentView = LOC_NAV;
